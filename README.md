@@ -7,8 +7,8 @@
 [![Paper](https://img.shields.io/badge/ArXiv-Paper-brown)](https://arxiv.org/abs/2509.22622)
 [![Code](https://img.shields.io/badge/GitHub-LongLive-blue)](https://github.com/NVlabs/LongLive)
 [![Model](https://img.shields.io/badge/HuggingFace-Model-yellow)](https://huggingface.co/Efficient-Large-Model/LongLive-1.3B)
-[![Video](https://img.shields.io/badge/YouTube-Video-red)](https://www.youtube.com/watch?v=CO1QC7BNvig)
-[![Demo](https://img.shields.io/badge/Demo-Page-bron)](https://nvlabs.github.io/LongLive)
+<!-- [![Video](https://img.shields.io/badge/YouTube-Video-red)](https://www.youtube.com/watch?v=CO1QC7BNvig) -->
+<!-- [![Demo](https://img.shields.io/badge/Demo-Page-bron)](https://nvlabs.github.io/LongLive) -->
 
 <!-- <div align="center">
 
@@ -18,7 +18,7 @@
 
 ## 💡 TLDR: When you input, it only takes about 2.6 seconds to generate a 5-second segment!
 
-**LongLive: Real-time Interactive Long Video Generation [[Paper](https://arxiv.org/abs/2509.22622)]** <br />
+**STREAMING AUTOREGRESSIVE VIDEO GENERATION VIA DIAGONAL DISTILLATION [[Paper](https://arxiv.org/abs/2509.22622)]** <br />
 [Jinxiu Liu](https://andysonys.github.io/), [Xuanming Liu](https://aaron-weihuang.com/), [Kangfu Mei](https://ruihang-chu.github.io/), [Yandong Wen](https://easonxiao-888.github.io/), [Ming-Hsuan Yang](https://yuyangzhao.com/), [Weiyang Liu](https://peppaking8.github.io/) <br />
 
 Large pretrained diffusion models have significantly enhanced the quality of gen- erated videos, and yet their use in real-time streaming remains limited. Autore- gressive models offer a natural framework for sequential frame synthesis but re- quire heavy computation to achieve high fidelity. Diffusion distillation can com- press these models into efficient few-step variants, but existing video distillation approaches largely adapt image-specific methods that neglect temporal dependen- cies. These techniques often excel in image generation but underperform in video synthesis, exhibiting reduced motion coherence, error accumulation over long se- quences, and a latency–quality trade-off. We identify two factors that result in these limitations: insufficient utilization of temporal context during step reduction and implicit prediction of subsequent noise levels in next-chunk prediction (ex- posure bias). To address these issues, we propose Diagonal Distillation, which operates orthogonally to existing approaches and better exploits temporal infor- mation across both video chunks and denoising steps. Central to our approach is an asymmetric generation strategy: more steps early, fewer steps later. This design allows later chunks to inherit rich appearance information from thoroughly pro- cessed early chunks, while using partially denoised chunks as conditional inputs for subsequent synthesis. By aligning the implicit prediction of subsequent noise levels during chunk generation with the actual inference conditions, our approach mitigates error propagation and reduces oversaturation in long-range sequences. We further incorporate implicit optical flow modeling to preserve motion qual- ity under strict step constraints. Our method generates a 5-second video in 2.61 seconds (up to 31 FPS), achieving a 277.3× speedup over the undistilled model.
@@ -30,13 +30,11 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 4. [Installation](#installation)
 5. [Inference](#inference)
 6. [Training](#training)
-7. [How to contribute](#how-to-contribute)
-8. [Citation](#citation)
-9. [License](#license)
-10. [Acknowledgement](#acknowledgement)
+<!-- 7. [How to contribute](#how-to-contribute) -->
+7. [Citation](#citation)
+8. [License](#license)
+9. [Acknowledgement](#acknowledgement)
 
-## News
-- [x] [2025.9.25] We release [Paper](https://arxiv.org/abs/2509.22622), this GitHub repo [diagonal-distillation]( https://diagonal-distillation.github.io/) with all training and inference code, the model weight [LongLive-1.3B](https://huggingface.co/Efficient-Large-Model/LongLive-1.3B).
 
 ## Highlights
 1. **Ultra-Fast Short Video Generation**: The proposed Diagonal Distillation framework achieves ​real-time 31 FPS generation​ for 5-second videos on a single H100 GPU, delivering a ​277.3× speedup​ over the base model while maintaining competitive visual quality.  This represents a 1.53× latency improvement over previous state-of-the-art methods, making it suitable for real-time streaming applications.
@@ -73,7 +71,7 @@ Other hardware setup could also work but hasn't been tested.
 
 Create a conda environment and install dependencies:
 ```
-git clone https://github.com/xuanmingliu/diagonal_distillation.git
+git clone https://github.com/xuanmingliu/Diagonal-distillation.git
 cd diagonal_distillation
 conda create -n diagonal_distillation python=3.10 -y
 conda activate diagonal_distillation
@@ -103,8 +101,6 @@ python demo.py
 ## Training
 **Download checkpoints**
 
-Please follow [Self-Forcing](https://github.com/guandeh17/Self-Forcing) to download text prompts and ODE initialized checkpoint.
-
 Download Wan2.1-T2V-14B as the teacher model.
 
 ```
@@ -116,13 +112,13 @@ bash training.sh
 ```
 
 
-## How to contribute
+<!-- ## How to contribute
 - Make sure to have git installed.
 - Create your own [fork](https://github.com/NVlabs/LongLive/fork) of the project.
 - Clone the repository on your local machine, using git clone and pasting the url of this project.
 - Read both the `Requirements` and `Installation and Quick Guide` sections below.
 - Commit and push your changes.
-- Make a pull request when finished modifying the project.
+- Make a pull request when finished modifying the project. -->
 
 
 ## Citation
