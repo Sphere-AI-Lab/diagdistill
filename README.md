@@ -62,7 +62,7 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with at least 40 GB memory (A100, and H100 are tested).
+* Nvidia GPU with at least 80 GB memory (A100, and H100 are tested).
 * Linux operating system.
 * 64 GB RAM.
 
@@ -86,7 +86,7 @@ python setup.py develop
 
 ```
 huggingface-cli download Wan-AI/Wan2.1-T2V-1.3B --local-dir wan_models/Wan2.1-T2V-1.3B
-huggingface-cli download Efficient-Large-Model/LongLive --local-dir longlive_models
+huggingface-cli download dia/ckpt --local-dir longlive_models（还没有上传到huggingface上）
 ```
 
 **Video Generation**
