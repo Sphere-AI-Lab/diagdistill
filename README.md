@@ -10,11 +10,8 @@
 <!-- [![Video](https://img.shields.io/badge/YouTube-Video-red)](https://www.youtube.com/watch?v=CO1QC7BNvig) -->
 <!-- [![Demo](https://img.shields.io/badge/Demo-Page-bron)](https://nvlabs.github.io/LongLive) -->
 
-<div align="center">
-
 https://github.com/xuanmingliu/Diagonal-distillation/raw/main/assets/fancy.mp4
 
-</div>
 
 ## 💡 TLDR: When you input, it only takes about 2.6 seconds to generate a 5-second segment!
 
