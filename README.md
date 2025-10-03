@@ -12,7 +12,7 @@
 
 <div align="center">
 
-https://github.com/xuanmingliu/Diagonal-distillation/blob/main/assets/fancy.mp4
+https://github.com/xuanmingliu/Diagonal-distillation/raw/main/assets/fancy.mp4
 
 </div>
 
