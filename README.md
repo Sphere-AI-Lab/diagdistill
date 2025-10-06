@@ -59,7 +59,7 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with at least 80 GB memory (A100, and H100 are tested).
+* Nvidia GPU with at least 40 GB memory (A100, and H100 are tested).
 * Linux operating system.
 * 64 GB RAM.
 
