@@ -41,15 +41,15 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 
 ## Introduction
 <p align="center" style="border-radius: 10px">
-  <img src="assets/speed_cropped (8).pdf" width="100%" alt="logo"/>
+  <img src="assets/figure1.jpg" width="100%" alt="logo"/>
 <strong>Our Diagonal Distillation framework achieves comparable quality to the full-step model while significantly reducing latency. The method yields a 1.88× speedup on 5-second short video generation on a single H100 GPU.</strong>
 </p>
 <p align="center" style="border-radius: 10px">
-  <img src="assets/dia_cropped (7).pdf" width="100%" alt="logo"/>
+  <img src="assets/figure2.jpg" width="100%" alt="logo"/>
 <strong>Diagonal Denoising with Diagonal Forcing and Progressive Step Reduction. We illustrate our method starting with 5 denoising steps for the first chunk and progressively reducing them to 2 steps by Chunk 7 . For chunks with k ≥ 4, we use a fixed two-step denoising process, reusing the Key-Value (KV) cache from the previous chunk’s last noisy frame. This approach maintains temporal coherence while reducing latency, the pseudo-code is provided in the appendix.</strong>
 </p>
 <p align="center" style="border-radius: 10px">
-  <img src="assets/motion_cropped (3).pdf" width="100%" alt="logo"/>
+  <img src="assets/figure3.jpg" width="100%" alt="logo"/>
 <strong>(a) Without motion loss shows minimal motion amplitude with only slight object movement; (b) With motion loss demonstrates significantly increased motion amplitude throughout the entire frame, validating our method’s effectiveness.</strong>
 </p>
 
@@ -59,7 +59,7 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with at least 40 GB memory (A100, and H100 are tested).
+* Nvidia GPU with at least 80 GB memory (A100, and H100 are tested).
 * Linux operating system.
 * 64 GB RAM.
 
