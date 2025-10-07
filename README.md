@@ -27,7 +27,7 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 4. [Installation](#installation)
 5. [Inference](#inference)
 6. [Training](#training)
-<!-- 7. [How to contribute](#how-to-contribute) -->
+7. [How to contribute](#how-to-contribute)
 7. [Citation](#citation)
 8. [License](#license)
 9. [Acknowledgement](#acknowledgement)
@@ -59,7 +59,7 @@ Large pretrained diffusion models have significantly enhanced the quality of gen
 **Requirements**
 
 We tested this repo on the following setup:
-* Nvidia GPU with at least 40 GB memory (A100, and H100 are tested).
+* Nvidia GPU with at least 80 GB memory (A100, and H100 are tested).
 * Linux operating system.
 * 64 GB RAM.
 
@@ -115,14 +115,13 @@ huggingface-cli download gdhe17/Self-Forcing vidprom_filtered_extended.txt --loc
 bash training.sh
 ```
 
-
-<!-- ## How to contribute
+## How to contribute
 - Make sure to have git installed.
 - Create your own [fork](https://github.com/NVlabs/LongLive/fork) of the project.
 - Clone the repository on your local machine, using git clone and pasting the url of this project.
 - Read both the `Requirements` and `Installation and Quick Guide` sections below.
 - Commit and push your changes.
-- Make a pull request when finished modifying the project. -->
+- Make a pull request when finished modifying the project.
 
 
 ## Citation
