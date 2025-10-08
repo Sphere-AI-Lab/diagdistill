@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>DIAGONAL DISTILLATION</title>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleButton = document.getElementById('toggleButton');
+      const tocContent = document.getElementById('tocContent');
+      const tocHeader = document.querySelector('.toc-header');
+
+      function toggleMenu() {
+        tocContent.classList.toggle('collapsed');
+        toggleButton.textContent = tocContent.classList.contains('collapsed') ? '▶' : '▼';
+      }
+
+      tocHeader.addEventListener('click', toggleMenu);
+    });
+
+  </script>
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="preload" href="./static/css/index.css" as="style">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script defer src="./static/js/bulma-carousel.min.js"></script>
+  <script defer src="./static/js/bulma-slider.min.js"></script>
+  <script defer src="./static/js/index.js"></script>
+
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #000000 0%, #333333 100%);
+      --secondary-gradient: linear-gradient(135deg, #000000 0%, #444444 100%);
+      --accent-gradient: linear-gradient(135deg, #000000 0%, #555555 100%);
+      --dark-gradient: linear-gradient(135deg, #000000 0%, #222222 100%);
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
+      --neon-glow: 0 0 20px rgba(0, 0, 0, 0.4);
+      --card-shadow: 0 15px 35px rgba(31, 38, 135, 0.37);
+      --card-border: rgba(255, 255, 255, 0.18);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      color: #000000 !important;
+    }
+
+    /* Force all text to be black */
+    body, html, p, h1, h2, h3, h4, h5, h6, span, div, a, strong, em, i, b,
+    .title, .subtitle, .content, .section, .container, .column, .item {
+      color: #000000 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    }
+
+    /* Override any inline styles */
+    * {
+      color: #000000 !important;
+    }
+
+    /* Special exceptions for video overlay text */
+    .prompt-text {
+      color: #ffffff !important;
+    }
+
+    /* Ensure all titles and headings are pure black */
+    h1, h2, h3, h4, h5, h6, .title, .subtitle {
+      color: #000000 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      -webkit-text-fill-color: #000000 !important;
+      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+      filter: none !important;
+    }
+
+    /* Ensure all strong/bold text is pure black */
+    strong, b {
+      color: #000000 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      -webkit-text-fill-color: #000000 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+      filter: none !important;
+    }
+
+    body {
+      font-family: 'Inter', 'Google Sans', sans-serif;
+      background:
+        linear-gradient(135deg, rgba(240, 240, 240, 0.8) 0%, rgba(220, 220, 220, 0.8) 25%, rgba(200, 200, 200, 0.9) 50%, rgba(180, 180, 180, 0.8) 75%, rgba(160, 160, 160, 0.9) 100%),
+        radial-gradient(ellipse at 20% 30%, rgba(160, 160, 160, 0.4) 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 70%, rgba(140, 140, 140, 0.3) 0%, transparent 40%),
+        radial-gradient(ellipse at 40% 80%, rgba(120, 120, 120, 0.2) 0%, transparent 30%),
+        #f5f5f5;
+      background-size: 400% 400%, 800px 600px, 600px 800px, 1000px 500px, 100% 100%;
+      animation: marbleFlow 25s ease infinite;
+      position: relative;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background:
+        linear-gradient(45deg, transparent 40%, rgba(180, 180, 180, 0.1) 45%, rgba(160, 160, 160, 0.2) 50%, rgba(180, 180, 180, 0.1) 55%, transparent 60%),
+        linear-gradient(-45deg, transparent 30%, rgba(140, 140, 140, 0.15) 35%, rgba(120, 120, 120, 0.25) 40%, rgba(140, 140, 140, 0.15) 45%, transparent 50%),
+        radial-gradient(circle at 25% 25%, rgba(100, 100, 100, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(80, 80, 80, 0.08) 0%, transparent 40%);
+      background-size: 300px 300px, 200px 200px, 150px 150px, 250px 250px;
+      animation: marbleVeins 30s linear infinite;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(200, 200, 200, 0.05) 20%, rgba(180, 180, 180, 0.1) 40%, rgba(200, 200, 200, 0.05) 60%, transparent 80%),
+        linear-gradient(0deg, transparent 0%, rgba(160, 160, 160, 0.08) 30%, rgba(140, 140, 140, 0.12) 50%, rgba(160, 160, 160, 0.08) 70%, transparent 100%);
+      background-size: 800px 100%, 100% 600px;
+      animation: marbleVeins2 20s ease-in-out infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes marbleFlow {
+      0% { background-position: 0% 50%, 0% 0%, 100% 100%, 50% 50%, 0% 0%; }
+      25% { background-position: 100% 50%, 20% 10%, 80% 90%, 30% 70%, 0% 0%; }
+      50% { background-position: 100% 100%, 40% 20%, 60% 80%, 70% 30%, 0% 0%; }
+      75% { background-position: 0% 100%, 60% 30%, 40% 70%, 90% 10%, 0% 0%; }
+      100% { background-position: 0% 50%, 0% 0%, 100% 100%, 50% 50%, 0% 0%; }
+    }
+
+    @keyframes marbleVeins {
+      0% { background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0%; }
+      25% { background-position: 25% 25%, 75% 75%, 25% 75%, 75% 25%; }
+      50% { background-position: 50% 50%, 50% 50%, 50% 50%, 50% 50%; }
+      75% { background-position: 75% 75%, 25% 25%, 75% 25%, 25% 75%; }
+      100% { background-position: 0% 0%, 100% 100%, 0% 100%, 100% 0%; }
+    }
+
+    @keyframes marbleVeins2 {
+      0% { background-position: 0% 0%, 0% 0%; }
+      33% { background-position: 33% 0%, 0% 33%; }
+      66% { background-position: 66% 0%, 0% 66%; }
+      100% { background-position: 0% 0%, 0% 0%; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      33% { transform: translateY(-10px) rotate(1deg); }
+      66% { transform: translateY(-5px) rotate(-1deg); }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeInRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes glow {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.4),
+                    0 15px 35px rgba(31, 38, 135, 0.2);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(102, 126, 234, 0.8),
+                    0 20px 45px rgba(31, 38, 135, 0.4);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .glass-morphism {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(25px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: var(--card-shadow);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(240, 240, 240, 0.2));
+      backdrop-filter: blur(30px);
+      border-radius: 25px;
+      margin: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      animation: fadeInUp 1s ease-out;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), transparent, rgba(255, 255, 255, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .hero:hover::before {
+      opacity: 1;
+    }
+
+    .title {
+      color: #000000 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      -webkit-text-fill-color: #000000 !important;
+      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+      filter: none !important;
+      animation: float 4s ease-in-out infinite;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .publication-title {
+      position: relative;
+    }
+
+    .publication-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 4px;
+      background: var(--accent-gradient);
+      border-radius: 2px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .video-container {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(240, 240, 240, 0.25));
+      backdrop-filter: blur(25px);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 25px;
+      padding: 25px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+      animation: glow 4s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    }
+
+    .video-container video {
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem;
+      animation: fadeInUp 1s ease-out 0.3s both;
+    }
+
+    .video-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(240, 240, 240, 0.2));
+      backdrop-filter: blur(30px);
+      border-radius: 25px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .video-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .video-item::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.4s ease;
+      pointer-events: none;
+    }
+
+    .video-item:hover::before {
+      opacity: 1;
+    }
+
+    .video-item:hover::after {
+      width: 100%;
+      height: 100%;
+    }
+
+    .video-item:hover {
+      transform: translateY(-20px) scale(1.03);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+      border-color: rgba(102, 126, 234, 0.6);
+    }
+
+    .video-item video {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 20px 20px 0 0;
+      transition: transform 0.4s ease;
+    }
+
+    .video-item:hover video {
+      transform: scale(1.05);
+    }
+
+    .prompt-text {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #ffffff;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2));
+      backdrop-filter: blur(15px);
+      opacity: 0;
+      transform: translateY(100%);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+      font-weight: 400;
+    }
+
+    .video-item:hover .prompt-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(240, 240, 240, 0.2));
+      backdrop-filter: blur(25px);
+      border-radius: 25px;
+      margin: 25px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      animation: fadeInUp 1s ease-out 0.2s both;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .footer {
+      background: linear-gradient(135deg, rgba(44, 62, 80, 0.95), rgba(52, 73, 94, 0.9));
+      backdrop-filter: blur(30px);
+      border-top: 2px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      margin-top: 4rem;
+    }
+
+    /* Enhanced text styling */
+    p {
+      font-weight: 400;
+      line-height: 1.7;
+      color: #000000;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Special styling for text in sections */
+    .section p, .container p {
+      color: #000000;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Make sure video descriptions are readable */
+    .prompt-text {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #ffffff;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2));
+      backdrop-filter: blur(15px);
+      opacity: 0;
+      transform: translateY(100%);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      font-weight: 400;
+    }
+
+    .video-item:hover .prompt-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Style for centered text descriptions */
+    div[style*="text-align: center"] {
+      color: #000000 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(240, 240, 240, 0.15));
+      backdrop-filter: blur(15px);
+      border-radius: 15px;
+      padding: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    div[style*="text-align: center"] p {
+      color: #000000 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    }
+
+    /* Style for column headers */
+    .columns .column p strong {
+      color: #000000 !important;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+    }
+
+    /* Style for main headers and author info */
+    div[style*="text-align: center"] h1,
+    div[style*="text-align: center"] h3,
+    div[style*="text-align: center"] p {
+      color: #000000 !important;
+      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .container {
+      animation: fadeInUp 1s ease-out 0.4s both;
+    }
+
+    h2 {
+      color: #000000 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      -webkit-text-fill-color: #000000 !important;
+      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+      filter: none !important;
+      position: relative;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 4px;
+      background: #000000;
+      border-radius: 2px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .content {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(240, 240, 240, 0.25));
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      color: #000000;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+      font-weight: 400;
+      line-height: 1.8;
+    }
+
+    hr {
+      border: none;
+      height: 3px;
+      background: linear-gradient(135deg, #000000 0%, #2c3e50 100%);
+      margin: 4rem 0;
+      border-radius: 3px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    .columns .column p strong {
+      color: #000000 !important;
+      background: none !important;
+      -webkit-background-clip: unset !important;
+      background-clip: unset !important;
+      -webkit-text-fill-color: #000000 !important;
+      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8) !important;
+      filter: none !important;
+      font-weight: 600;
+    }
+
+    #results-carousel {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(240, 240, 240, 0.15));
+      backdrop-filter: blur(20px);
+      border-radius: 25px;
+      padding: 2rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      margin: 1.5rem 0;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    #results-carousel:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .item {
+      transition: all 0.4s ease;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .item:hover {
+      transform: translateY(-8px);
+    }
+
+    .item video {
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s ease;
+    }
+
+    .item:hover video {
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+      transform: scale(1.02);
+    }
+
+    .footer {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+      backdrop-filter: blur(25px);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      text-shadow: var(--text-shadow);
+      margin-top: 4rem;
+    }
+
+    /* Enhanced text styling */
+    p {
+      font-weight: 400;
+      line-height: 1.7;
+      color: #000000;
+    }
+
+    /* Improved responsive design */
+    @media (max-width: 1024px) {
+      .video-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        padding: 2rem;
+      }
+
+      .hero, .section {
+        margin: 15px;
+        border-radius: 20px;
+      }
+
+      body {
+        animation: none;
+        background:
+          linear-gradient(135deg, rgba(240, 240, 240, 0.9) 0%, rgba(220, 220, 220, 0.9) 50%, rgba(200, 200, 200, 0.9) 100%),
+          #f5f5f5;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .video-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem;
+      }
+
+      .hero, .section {
+        margin: 10px;
+        border-radius: 15px;
+      }
+
+      .video-container {
+        padding: 15px;
+        border-radius: 18px;
+      }
+
+      body {
+        animation: none;
+        background:
+          linear-gradient(135deg, rgba(245, 245, 245, 0.95) 0%, rgba(235, 235, 235, 0.95) 100%),
+          #f0f0f0;
+      }
+
+      .content {
+        padding: 1.5rem;
+      }
+
+      .prompt-text {
+        padding: 1.5rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Scroll animations */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Enhanced loading animation */
+    .loading {
+      opacity: 0;
+      animation: fadeInUp 1s ease-out forwards;
+    }
+
+    .loading:nth-child(1) { animation-delay: 0.1s; }
+    .loading:nth-child(2) { animation-delay: 0.2s; }
+    .loading:nth-child(3) { animation-delay: 0.3s; }
+    .loading:nth-child(4) { animation-delay: 0.4s; }
+    .loading:nth-child(5) { animation-delay: 0.5s; }
+  </style>
+
+</head>
+
+<body>
+
+  <section class="hero loading">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <br>
+            <h1 class="title is-1 publication-title" style="margin-bottom:0rem">DIAGONAL DISTILLATION</h1>
+            <h2 class="title is-3 publication-title">FOR STREAMING AUTORE-GRESSIVE VIDEO GENERATION</h2>
+            <div style="text-align: center; margin-top: 20px;">
+                <h1 style="font-family: 'Inter', Arial, sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 10px; color: #000000 !important;">Anonymous authors</h1>
+                <p style="font-family: 'Inter', Arial, sans-serif; font-size: 20px; font-weight: 600; color: #000000;">Paper under double-blind review</p>
+            </div>
+            <div class="video-container" style="margin: 2rem auto; max-width: 800px;">
+                <video controls autoplay muted loop style="width: 100%; display: block;">
+                    <source src="fancy.mp4" type="video/mp4">
+                </video>
+                <p style="text-align: center; margin-top: 1rem; font-size: 1rem; color: #666;">
+                    In the results shown in the above video, the first four cases are presented at 1x acceleration with 15 fps (original speed), while the last four cases are presented at 2x acceleration with 30 fps.
+                </p>                
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-body loading" style="padding-bottom: 0rem;">
+        <div class="container is-max-desktop">
+          <div class="columns is-centered">
+            <div class="column has-text-centered">
+              <h2 class="title is-4" style="color: #ffffff; margin-bottom: 1rem;">Abstract</h2>
+              <div class="content has-text-justified" style="font-size: 1.25rem; line-height: 1.6;">
+                <p>
+                  The advent of large-scale diffusion models has significantly enhanced the quality of generated videos. However, their application in real-time streaming remains limited. While autoregressive models provide a natural framework for sequential frame generation, they typically require substantial computational resources to achieve high visual fidelity. Although diffusion distillation techniques can compress such models into efficient few-step variants, current video distillation methods predominantly adopt image-specific approaches that overlook critical temporal dependencies. Consequently, these techniques often excel in image generation but underperform in video synthesis, resulting in issues such as reduced motion coherence, error accumulation over long sequences, and a persistent trade-off between latency and quality. We identify that these challenges are primarily exacerbated by two fac- tors: insufficient utilization of temporal context during step reduction and implicit prediction of subsequent noise levels in next-chunk prediction (exposure bias). To address these issues, we propose a novel framework—<b>Diagonal Distillation</b>—that operates orthogonally to existing approaches. This method systematically leverages temporal information across both video chunks and denoising steps. Specifically, we introduce an asymmetric generation strategy: “more steps early, fewer steps later.” This enables later chunks to efficiently inherit rich appearance information from the initial, more thoroughly processed chunks while utilizing partially denoised chunks as conditional inputs for subsequent generation. By realigning the implicit prediction of subsequent noise levels during chunk generation with actual inference conditions, our approach mitigates error propagation and alleviates oversaturation in long-range sequences. Additionally, we incorporate implicit optical flow modeling to preserve motion quality under strict step constraints. Our method takes only <b>2.61 seconds</b> to generate a <b>5-second</b> video and provides a <b>270x</b> speedup over the undistilled model, nearly doubling the acceleration ratio of the previous state-of-the-art (140x) while preserving similar visual quality.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <br>
+
+  <hr>
+  <div class="container loading" id="text2short">
+    <h2 id="obj-comparison" class="title is-3 has-text-centered">Real-Time Video Generation</h2>
+    <div class="content has-text-justified" style="font-size: 1.5rem; line-height: 1.8;">
+      <p>
+        Our model can generate a 5-second video in just <b>2.61</b> seconds while maintaining comparable quality.
+      </p>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="video-grid loading">
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_white_and_orange_tabby_cat_is_seen_happily_darti-_20250923_062844.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A white and orange tabby cat is seen happily darting through a dense garden, as if chasing something. Its eyes are wide and happy as it jogs forward, scanning the branches, flowers, and leaves as it walks. The path is narrow as it makes its way between all the plants. the scene is captured from a ground-level angle, following the cat closely, giving a low and intimate perspective. The image is cinematic with warm tones and a grainy texture. The scattered daylight between the leaves and plants above creates a warm contrast, accentuating the cat's orange fur. The shot is clear and sharp, with a shallow depth of field.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cheerful_fuzzy_panda_playing_a_guitar_near_a_wa-_20250904_163919.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A cheerful, fuzzy panda playing a guitar near a warm campfire. The panda has soft, black patches against a white fluffy coat, with large, expressive eyes filled with joy. It is sitting comfortably, strumming the strings with its front paws. Flames from the campfire flicker and dance, casting gentle shadows on the ground. In the background, a majestic snow-capped mountain rises, its peaks dusted with snow under a clear blue sky. The scene is captured in a medium shot, emphasizing the cozy, serene atmosphere of the winter landscape.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cheerful_and_energetic_Corgi_playing_happily_in-_20250904_161618.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A cheerful and energetic Corgi playing happily in a sunlit park during the golden hour of sunset. The Corgi is running around with a playful wagging tail and joyful barks, jumping over small obstacles and chasing after a ball. The park is filled with lush green grass and scattered trees casting long shadows. In the background, the sky is painted with warm hues of orange and pink, reflecting a serene and cozy atmosphere. The scene includes an intense shaking effect that adds excitement and vibrancy to the video. Medium close-up shot focusing on the Corgi's playful antics.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_high-speed_train_rushes_down_the_railway_tracks-_20250904_151328.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A high-speed train rushes down the railway tracks, its sleek body gleaming under the bright sunlight. The train moves with great momentum, leaving a trail of steam behind as it passes through the landscape. The camera follows the train from a distance, capturing the powerful motion and speed. Surrounding the tracks are lush green fields and tall trees, creating a picturesque backdrop. The video should emphasize the train's velocity and the dynamic motion of the scenery passing by. Wide shot, showing the entirety of the train and the expansive environment surrounding it.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_fluffy_white_sheep_grazing_in_a_lush_green_meado-_20250904_152501.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A fluffy white sheep grazing in a lush green meadow under a clear blue sky. The sheep has soft wool, large brown eyes, and a gentle expression. It is nibbling on grass, moving its head side to side as it eats. In the background, there are rolling hills covered with green grass and wildflowers in full bloom. The scene is peaceful and serene, captured in a medium close-up shot focusing on the sheep's calm and content demeanor.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cute_fluffy_panda_sitting_at_a_small_table_in_a-_20250904_163847.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A cute, fluffy panda sitting at a small table in a traditional Chinese restaurant, eating Chinese cuisine. The panda has soft black patches around its eyes and ears, contrasting with its white fur. It sits comfortably in a relaxed posture, holding a pair of chopsticks with its front paws, delicately picking up pieces of dumplings from a steaming plate. The restaurant is decorated with red lanterns and bamboo accents, creating a cozy and inviting atmosphere. In the background, other diners can be seen enjoying their meals. Medium close-up shot focusing on the panda's face and hands as it enjoys its meal.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_person_is_confidently_marching_forward_with_a_de-_20250904_145113.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A person is confidently marching forward with a determined expression. They take strong, purposeful strides as they move across a paved street under clear blue skies. The person wears a smart casual outfit consisting of a fitted t-shirt and jeans, along with sneakers. Their posture is upright and their arms swing naturally at their sides. The scene is captured in a medium shot, focusing on the individual from a slightly elevated angle to emphasize their forward motion. The background includes a few passersby and buildings, but the focus remains on the marching figure.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_sleek_modern_boat_accelerating_across_the_water-_20250904_151518.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A sleek, modern boat accelerating across the water to gain speed. The boat's hull slices through the waves, creating a trail of white foam behind it. The sun glints off the water, casting shimmering reflections. The boat's engine roars as it speeds up, and the spray from the bow sprays upwards. Focus on the dynamic motion of the boat as it accelerates, with a medium shot capturing the entirety of the boat and the surrounding water. No camera movement, just a static yet action-packed scene.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_sleek_modern_green_sports_car_driving_down_a_sc-_20250904_153747.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A close-up shot of a sleek green hard-shell suitcase with a shiny metallic handle and sturdy wheels. The suitcase has a simple yet modern design, with subtle embossed lines running along its surface. In the background, there is a blurred airport terminal with people walking by, adding a sense of travel and adventure. The suitcase remains stationary, emphasizing its detailed texture and color.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_sleek_modern_sports_car_accelerating_rapidly_do-_20250904_151105.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A sleek, modern sports car accelerating rapidly down a straight, empty road, gaining speed with each passing second. The car's engine roars as it speeds up, tires leaving occasional smoke trails on the asphalt. The exterior of the car is a shiny metallic silver with minimalistic design elements. The background showcases a scenic countryside with rolling hills and a clear blue sky. The camera follows the car from a slight distance, capturing the intense acceleration and speed from a dynamic tracking shot.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_nighttime_scene_from_a_vintage_film-style_photog-_20250912_141950.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A nighttime scene from a vintage film-style photograph, depicting a giant, otherworldly creature slowly walking down a desolate, rundown city street. Only one dim streetlamp casts flickering shadows, illuminating the creature's massive, imposing form. Its skin is rough and covered in peculiar growths, with glowing eyes that reflect the dim light. The creature's steps echo in the empty alleyways, creating a sense of eerie quiet. The background features crumbling buildings, broken windows, and trash-strewn sidewalks. The photo has a grainy texture and a muted color palette, capturing the haunting atmosphere of the scene. A medium shot with a slight tilt to the camera, emphasizing the creature's movement and presence.</p>
+    </div>
+
+    <div class="video-item">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_person_is_cycling_through_a_scenic_park_trail_T-_20250904_145102.mp4"
+          type="video/mp4">
+      </video>
+      <p class="prompt-text">A person is cycling through a scenic park trail. The rider is wearing a helmet, casual clothes, and sunglasses, pedaling steadily. They are mid-action, leaning slightly forward, with one hand on the handlebars and the other hanging loosely. The environment around them includes lush green trees, blooming flowers, and a winding dirt path. The sun is shining brightly, casting dappled shadows through the leaves. The scene captures a close-up of the rider from a side angle, focusing on their determined expression and the motion of the bicycle wheels.</p>
+    </div>
+
+  </div>
+
+  <hr>
+
+  <div class="container loading">
+    <h2 id="obj-comparison" class="title is-3 has-text-centered">Faster, and Better </h2>
+    <div class="content has-text-justified" style="font-size: 1.5rem; line-height: 1.8;">
+      <p>
+        Our approach generates 5-second videos in only <b>2.61 seconds</b>, achieving a <b>270x</b> speedup over the baseline model (almost twice the prior state-of-the-art 140x acceleration) with similar visual quality.
+    </div>
+  </div>
+
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Wan2.1-1.3B</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">CausVid</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Self forcing</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Ours-1.3B</strong></p>
+    </div>
+  </div>
+
+  <!-- Row 2 -->
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/跑步.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_film_shot_in_35mm_capturing_a_dynamic-_20250913_090135.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_film_shot_in_35mm_capturing_a_dynamic-_20250912_160104.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_film_shot_in_35mm_capturing_a_dynamic-_20250912_140732.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <p class="prompt-text">A cinematic film shot in 35mm capturing a dynamic step-printing scene of a person running. The runner is a young man with short, tousled brown hair and determined eyes, sprinting down a city street lined with tall buildings and neon signs. His arms are pumped vigorously, and he looks focused and energetic. The background features blurred motion with the cityscape gradually fading into a soft, sepia tone. The camera follows him closely, capturing his every stride and movement. The scene has a nostalgic and vintage film texture, enhancing the dramatic intensity of the run. A close-up shot from a slightly behind-the-subject angle.</p>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A cinematic film shot in 35mm capturing a dynamic step-printing scene of a person running. The runner is a young man with short, tousled brown hair and determined eyes, sprinting down a city street lined with tall buildings and neon signs. His arms are pumped vigorously,......</p>
+  </div>
+
+  <!-- Continue with all other video sections using the same enhanced styling... -->
+  <!-- I'll include a few more examples and then indicate where the rest would continue -->
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/骑马.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_scene_from_a_classic_western_movie_fe-_20250913_091025.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_scene_from_a_classic_western_movie_fe-_20250912_160118.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_cinematic_scene_from_a_classic_western_movie_fe-_20250912_141308.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <p class="prompt-text">A petri dish with a bamboo forest growing within it that has tiny red pandas running around.</p>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A cinematic scene from a classic western movie, featuring a rugged man riding a powerful horse through the vast Gobi Desert at sunset. The man, dressed in a dusty cowboy hat and a worn leather jacket, reins tightly on the horse's neck as he gallops across the golden sands. The sun sets dramatically behind them, casting long shadows and warm hues across the landscape. The background is filled with rolling dunes and sparse, rocky outcrops......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/水.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dramatic_and_dynamic_scene_in_the_style_of_a_dis-_20250913_091036.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dramatic_and_dynamic_scene_in_the_style_of_a_dis-_20250912_160132.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dramatic_and_dynamic_scene_in_the_style_of_a_dis-_20250912_141730.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <p class="prompt-text">A dramatic and dynamic scene in the style of a disaster movie, depicting a powerful tsunami rushing through a narrow alley in Bulgaria. The water is turbulent and chaotic, with waves crashing violently against the walls and buildings on either side. The alley is lined with old, weathered houses, their facades partially submerged and splintered. The camera angle is low, capturing the full force of the tsunami as it surges forward, creating a sense of urgency and danger. People can be seen running frantically, adding to the chaos. The background features a distant horizon, hinting at the larger scale of the tsunami. A dynamic, sweeping shot from a low-angle perspective, emphasizing the movement and intensity of the event.</p>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A dramatic and dynamic scene in the style of a disaster movie, depicting a powerful tsunami rushing through a narrow alley in Bulgaria. The water is turbulent and chaotic, with waves crashing violently against the walls and buildings on either side. The alley is lined with old, weathered houses, their facades partially submerged and splintered. The camera angle is low, capturing the full force of the tsunami as it surges forward, creating a sense of urgency and danger......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/女孩跑步.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dynamic_and_chaotic_scene_in_a_dense_forest_duri-_20250913_091047.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dynamic_and_chaotic_scene_in_a_dense_forest_duri-_20250912_160146.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_dynamic_and_chaotic_scene_in_a_dense_forest_duri-_20250912_143245.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <p class="prompt-text">A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.</p>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A dynamic and chaotic scene in a dense forest during a heavy rainstorm, capturing a real girl frantically running through the foliage. Her wild hair flows behind her as she sprints, her arms flailing and her face contorted in fear and desperation. Behind her......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/002_t2v-1.3B_832x480_A_photograph_in_a_warm_candid_style_captures_a_mid.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_photograph_in_a_warm_candid_style_captures_a_mi-_20250915_172628.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_photograph_in_a_warm_candid_style_captures_a_mi-_20250915_172729.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_photograph_in_a_warm_candid_style_captures_a_mi-_20250912_150048.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A photograph in a warm and nostalgic style, capturing chimneys against a setting sun. The chimneys stand tall and sturdy, casting long shadows across a peaceful rural landscape. The sun is low in the sky, painting the scene in soft orange and pink hues. The background features a serene countryside with fields, trees, and distant hills. The chimneys are surrounded by a haze of golden light, creating a sense of warmth and tranquility. A wide-angle shot with the chimneys in the foreground, capturing the entire sunset scene.</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/003_t2v-1.3B_832x480_A_winter_storm_rages_in_Antarctica_with_swirling_s.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_winter_storm_rages_in_Antarctica_with_swirling-_20250915_172642.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_winter_storm_rages_in_Antarctica_with_swirling-_20250915_172743.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_winter_storm_rages_in_Antarctica_with_swirling-_20250912_164706.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A winter storm rages in Antarctica, with swirling snow and icy winds. A toy robot in vibrant purple overalls and sturdy cowboy boots takes a leisurely stroll across the icy landscape. Its arms are held out to maintain balance against the gusts, and its large round eyes sparkle with curiosity and joy. The robot's legs move with a mechanical yet rhythmic motion, each step steady and determined. The background shows a rugged Antarctic terrain with jagged ice formations and the occasional exposed rock. The photo has a nostalgic, retro-futuristic style, capturing a moment of whimsical adventure amidst the harsh conditions. A medium shot with a dynamic angle, emphasizing the robot's journey through the storm.</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/004_t2v-1.3B_832x480_An_adorable_kangaroo_dressed_in_a_cute_green_dress.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_adorable_kangaroo_dressed_in_a_cute_green_dres-_20250915_172655.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_adorable_kangaroo_dressed_in_a_cute_green_dres-_20250915_172756.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_adorable_kangaroo_dressed_in_a_cute_green_dres-_20250912_165718.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>An adorable kangaroo, dressed in a cute green dress with polka dots, is wearing a small sun hat perched on its head. The kangaroo takes a pleasant stroll through the bustling streets of Mumbai during a vibrant and colorful festival. The background is filled with lively festival-goers in traditional Indian attire, adorned with intricate henna designs and bright jewelry. The scene is filled with colorful decorations, vendors selling various items, and people dancing and singing......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/005_t2v-1.3B_832x480_An_aerial_shot_of_a_fast-moving_drone_flying_throu.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_aerial_shot_of_a_fast-moving_drone_flying_throu-_20250915_172709.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_aerial_shot_of_a_fast-moving_drone_flying_throu-_20250912_142139.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_An_aerial_shot_of_a_fast-moving_drone_flying_throu-_20250915_172810.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>An aerial shot of a fast-moving drone flying through a dense green jungle, capturing the vibrant foliage and lush canopy below. The drone glides smoothly, showcasing the intricate network of vines and towering trees. The background features a mix of bright green leaves and dappled sunlight filtering through the branches. The drone's path is dynamic, suggesting a sense of speed and movement. A high-angle aerial view with a clear focus on the drone's flight path.</p>
+  </div>
+
+  <hr>
+
+  <div class="container loading">
+    <h2 id="obj-comparison" class="title is-3 has-text-centered">ABLATION STUDY</h2>
+    <div class="content has-text-justified" style="font-size: 1.5rem; line-height: 1.8;">
+    We generated videos under different configurations: without Diagonal Distillation, video quality remained largely unchanged compared to the normal setting, but generation time increased by approximately <b>40%</b>. Without Diagonal Forcing, generation time remained similar, but video quality deteriorated significantly.
+    </div>
+  </div>
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Distillation </strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Forcing </strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Full Method (Ours)</strong></p>
+    </div>
+  </div>
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_close-up_3D_animated_scene_of_a_short_fluffy_mo-_20250909_153336.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_Animated_scene_features_a_close-up_of_a_short_fluf-_20250913_034016.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_close-up_3D_animated_scene_of_a_short_fluffy_mo-_20250909_153347.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>Animated scene features a close-up of a short fluffy monster kneeling beside a melting red candle.</p>
+  </div>
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Distillation</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Forcing</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Full Method (Ours)</strong></p>
+    </div>
+  </div>
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_close_up_view_of_a_glass_sphere_that_has_a_zen_g-_20250909_155116.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_close_up_view_of_a_glass_sphere_that_has_a_zen_g-_20250913_034026.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_close_up_view_of_a_glass_sphere_that_has_a_zen_g-_20250909_155126.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A close up view of a glass sphere that has a zen garden within it. There is a small dwarf in the sphere who is raking the zen garden and creating patterns in the sand.</p>
+  </div>
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Distillation</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Forcing</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Full Method (Ours)</strong></p>
+    </div>
+  </div>
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_3D_animation_of_a_small_round_fluffy_creature-_20250910_072411.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_3D_animation_of_a_small_round_fluffy_creature-_20250913_034036.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_3D_animation_of_a_small_round_fluffy_creature-_20250910_072435.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A 3D animation of a small, round, fluffy creature with big, expressive eyes exploring a vibrant, enchanted forest. The creature, a whimsical blend of a rabbit and a squirrel, has soft blue fur and a bushy, striped tail. It hops along a sparkling stream, its eyes wide with wonder. The forest is alive with magical elements: flowers that glow and change colors, trees with leaves in shades of purple and silver, and small floating lights that resemble fireflies. The creature stops to interact playfully with a group of tiny, fairy-like beings dancing around a mushroom ring. The creature looks up in awe at a large, glowing tree that seems to be the heart of the forest. The scene is rendered in a detailed, fantasy style, with a soft, ethereal lighting that enhances the enchantment. The camera follows the creature as it moves, capturing its playful interactions and the magical ambiance of the forest. A medium shot with a dynamic angle that highlights the creature's expressions and the enchanting environment.</p>
+  </div>
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Distillation</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Without Diagonal Forcing</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Full Method (Ours)</strong></p>
+    </div>
+  </div>
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_romantic_scene_in_a_nighttime_cityscape_where_a-_20250910_074438.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_romantic_scene_in_a_nighttime_cityscape_where_a-_20250913_034047.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="case/long_video_output_A_romantic_scene_in_a_nighttime_cityscape_where_a-_20250910_074619.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A romantic scene in a nighttime cityscape where a man and a woman walk hand in hand under a starry sky, their faces illuminated by the soft glow of streetlights. They are dressed in casual yet elegant attire, the man in a dark blue suit and the woman in a light green dress. A wooden bucket is placed on the ground nearby, adding a touch of rustic charm. The couple's expressions are filled with happiness and affection, as they gaze into each other's eyes. The background features tall buildings with windows lit up, creating a warm and cozy atmosphere. The stars above twinkle brightly, enhancing the serene and intimate mood. The scene is captured in a medium shot with a slightly upward angle, capturing both the couple and the surrounding environment.</p>
+  </div>
+  <br>
+  <hr>
+
+  <div class="container loading">
+    <h2 id="obj-comparison" class="title is-3 has-text-centered">Long video generation </h2>
+    <div class="content has-text-justified" style="font-size: 1.5rem; line-height: 1.8;">
+      <p>
+        In long-sequence video generation tasks, we successfully mitigated the inherent exposure bias and color oversaturation issues. Meanwhile, the generation speed achieved a significant improvement of approximately <b>96%</b> compared to the Self-forcing method.
+      </p>
+    </div>
+  </div>
+
+  <br>
+  <div class="columns is-centered has-text-centered loading">
+    <div class="column">
+      <p><strong style="font-size: 24px;">Self forcing</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">CausVid</strong></p>
+    </div>
+    <div class="column">
+      <p><strong style="font-size: 24px;">Ours</strong></p>
+    </div>
+  </div>
+
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_rally_car_speeding_through_a_tight_turn-_20250922_010215.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_rally_car_speeding_through_a_tight_turn-_20250922_010347.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_rally_car_speeding_through_a_tight_turn-_20250921_175521.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A dynamic rally car speeding through a tight turn on a winding track, tires screeching as it navigates the curves with precision. The car is a sleek, racing machine with a vibrant red body and black accents, its headlights glowing brightly in the night. The driver, a determined-looking man with focused eyes.......</p>
+  </div>
+
+  <!-- Add more long video sections from original file -->
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dramatic_tilt-up_shot_from_the_base_of_a_sleek-_20250915_091300.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dramatic_tilt-up_shot_from_the_base_of_a_sleek-_20250915_085631.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dramatic_tilt-up_shot_from_the_base_of_a_sleek-_20250911_133233.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A dramatic tilt-up shot from the base of a sleek, modern skyscraper, gradually moving upward to emphasize its towering height against the vast, clear sky. The building's glass facade reflects the sunlight, creating a shimmering effect. The sky is a blend of deep blue and light clouds, adding depth to the scene. The camera angle highlights the vertical lines and sharp edges of the structure, emphasizing its imposing presence. A dynamic and cinematic view, capturing the grandeur of the skyscraper.</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_FPV_aerial_view_of_a_vibrant_underwater-_20250925_042354.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_FPV_aerial_view_of_a_vibrant_underwater-_20250922_010608.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_FPV_aerial_view_of_a_vibrant_underwater-_20250921_180518.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p></p>A dynamic FPV aerial view of a vibrant underwater suburban neighborhood, where colorful corals line the streets. The camera moves swiftly, capturing the intricate details of the coral formations and the diverse marine life swimming around. The streets are bustling with colorful fish and schools of tropical fish......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_first-person_perspective_photo_in_a_realistic_ou-_20250911_145828.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_first-person_perspective_photo_in_a_realistic_ou-_20250915_091746.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_first-person_perspective_photo_in_a_realistic_ou-_20250915_090041.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A first-person perspective photo in a realistic outdoor style, capturing a hiker ascending a winding mountain trail. Each step reveals more of the breathtaking landscape ahead, including dense green forests, rugged cliffs, and distant peaks shrouded in mist......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_high-energy_road_race_photograph_capturing_a_cyc-_20250922_010719.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_high-energy_road_race_photograph_capturing_a_cyc-_20250922_010830.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_high-energy_road_race_photograph_capturing_a_cyc-_20250921_142207.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A high-energy road race photograph capturing a cyclist powering up a steep hill. The cyclist is a middle-aged man with a determined expression, sweat glistening on his brow. He is dressed in a sleek, aerodynamic racing jersey and cycling shorts, with number clearly visible on his back. His helmet is snugly fastened......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+  style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_bustling_market_scene_captured_in_the_style_of_a-_20250922_011214.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_bustling_market_scene_captured_in_the_style_of_a-_20250915_092344.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_bustling_market_scene_captured_in_the_style_of_a-_20250911_135631.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A bustling market scene captured in the style of a documentary photo, showcasing a large truck driving through an open-air market. The truck moves past colorful stalls filled with various goods, each stall adorned with vibrant decorations and enticing merchandise......</p>
+  </div>
+
+  <div id="results-carousel" class="loading"
+    style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_photograph_capturing_a_little_boy_riding-_20250922_010945.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_photograph_capturing_a_little_boy_riding-_20250922_011054.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+    <div class="item" style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+      <video controls preload="metadata" autoplay muted loop playsinline>
+        <source
+          src="long_video/long_video_output_A_dynamic_photograph_capturing_a_little_boy_riding-_20250921_174318.mp4"
+          type="video/mp4">
+      </video>
+    </div>
+  </div>
+  <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
+  <p>A dynamic photograph capturing a little boy riding his bike through a garden that transitions through the changing seasons—fall leaves crunch underfoot, winter snow blankets the ground, spring flowers bloom, and summer sunshine sparkles through the foliage....... </p>
+  </div>
+
+  <script>
+    function copyBibtex() {
+      const bibtexText = `@article{huang2025selfforcing,
+  title={Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion},
+  author={Huang, Xun and Li, Zhengqi and He, Guande and Zhou, Mingyuan and Shechtman, Eli},
+  journal={arXiv preprint arXiv:2506.08009},
+  year={2025}
+}`;
+
+      navigator.clipboard.writeText(bibtexText).then(function() {
+        const button = document.getElementById('copy-bibtex');
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.style.background = '#48c774';
+        setTimeout(function() {
+          button.textContent = originalText;
+          button.style.background = '#3273dc';
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+
+    // Enhanced scroll animations
+    function observeElements() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.fade-in').forEach(el => {
+        observer.observe(el);
+      });
+    }
+
+    // Initialize animations when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      observeElements();
+    });
+  </script>
+
+  <footer class="footer loading">
+    <div class="container" align="center">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website template is borrowed from <a href="https://github.com/nerfies/nerfies.github.io" style="color: #4facfe;">Nerfies</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var videos = document.querySelectorAll('#results-carousel video');
+
+      videos.forEach(function (video) {
+        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (!isMobile) {
+          if (!video.classList.contains('single_image_video')) {
+            video.setAttribute('autoplay', 'autoplay');
+          }
+        } else {
+          console.log('Autoplay disabled for mobile devices');
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>
