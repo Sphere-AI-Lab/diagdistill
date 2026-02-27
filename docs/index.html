@@ -6,7 +6,7 @@
   <title>DIAGONAL DISTILLATION</title>
   <script>
     window.dataLayer = window.dataLayer || [];
-
+  
     function gtag() {
       dataLayer.push(arguments);
     }
@@ -29,7 +29,50 @@
     });
 
   </script>
-
+  
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['ams', 'bm']}
+            },
+            loader: {load: ['[tex]/ams', '[tex]/bm']},
+            chtml: {displayAlign: 'center'},
+            startup: {
+                pageReady: () => {
+                    console.log('MathJax is ready to process');
+                    return MathJax.startup.defaultPageReady();
+                }
+            }
+        };
+    </script>
+    
+    <!-- 2. 异步加载 MathJax 库 -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .math-display {
+            text-align: center;
+            margin: 1.5rem 0;
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border-left: 4px solid #4a6fa5;
+            font-size: 1.2rem;
+        }
+    </style>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -740,7 +783,7 @@
             </div>
             <div class="video-container" style="margin: 2rem auto; max-width: 800px;">
                 <video controls autoplay muted loop style="width: 100%; display: block;">
-                    <source src="redpandacompress_demo_video.mp4" type="video/mp4">
+                    <source src="new_demo.mp4" type="video/mp4">
                 </video>
                 <p style="text-align: center; margin-top: 1rem; font-size: 1rem; color: #666;">
                     In the results shown in the above video, the first four cases are presented at 1x acceleration with 15 fps (original speed), while the last four cases are presented at 2x acceleration with 30 fps.
@@ -1590,7 +1633,168 @@
   <div style="text-align: center; margin: 20px 0; font-size: 18px; color: #000000;">
   <p>A dynamic photograph capturing a little boy riding his bike through a garden that transitions through the changing seasons—fall leaves crunch underfoot, winter snow blankets the ground, spring flowers bloom, and summer sunshine sparkles through the foliage....... </p>
   </div>
+  <br>
+  <hr>
+<h2 class="title is-4" style="color: #ffffff; margin-bottom: 1rem; text-align: center;">
+    Contrast ratio and saturability
+</h2>
+<div class="image-container" style="margin: 2rem auto; max-width: 1200px;">
+    <img src="ScreenShot_2025-12-10_174503_449.png" style="width: 100%; display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
 
+    <div class="content has-text-justified" style="font-size: 1.1rem; line-height: 1.6; color: #333; font-family: Arial, sans-serif;">
+        <p style="margin-bottom: 1.5rem;">
+            To directly measure exposure bias and its relation to prompt types and motion, we performed the following analyses.
+            We quantified exposure bias as the drift magnitude of saturation and contrast over time across a 45-frame sequence.
+            The results reveal a critical trade-off governed by noise intensity:
+        </p>
+
+        <ul style="font-size: 1.1rem; line-height: 1.6; padding-left: 2rem; margin-bottom: 1.5rem; color: #333;">
+            <li style="margin-bottom: 1rem;">
+                <strong>At low noise intensities (noise=0, 50):</strong> Both metrics exhibit a clear and significant upward drift, providing direct evidence of exposure bias.
+                The fact that noise=50 shows less drift than noise=0 demonstrates that introducing noise helps reduce error accumulation, preliminarily supporting our "implicit next-noise prediction" claim.
+            </li>
+            <li style="margin-bottom: 1rem;">
+                <strong>At very high noise levels (>100):</strong> While drift is minimized, this incurs significant video quality degradation.
+            </li>
+            <li style="margin-bottom: 1.5rem;">
+                <strong>Our method (noise=100):</strong> Successfully suppresses the detrimental metric drift observed at lower noise levels, while avoiding the quality penalties of excessively high noise.
+                This provides a direct calibration, achieving stability without the associated cost.
+            </li>
+        </ul>
+
+        <p style="margin-bottom: 1.5rem;">
+            <p style="margin-top: 1.5rem; font-weight: bold;">The Saturation metric is computed by converting images to HSV and averaging the mean saturation channel values across all frames. A higher value indicates oversaturation.</p><p>(N:Total number of frames in the sequence;  S<sub>i</sub>:Saturation channel of the i-th frame in HSV color space, where each pixel’s value (ranging from 0 to 1) represents how vivid the color is.)</p>
+        </p>
+
+        <!-- 第一处图片占位 -->
+
+        <div style="display: block; width: fit-content; margin: auto; background: #f9f9f9; padding: 6px; border-radius: 8px; text-align: center;">
+          <img src="Saturation.png" alt="Saturation Metric Visualization" style="display: block; border-radius: 4px;">
+        </div>
+
+
+        <p style="margin-bottom: 1.5rem;">
+            <p style="margin-top: 1.5rem; font-weight: bold;">The Contrast metric uses RMS Contrast, calculated as the standard deviation of grayscale pixel intensities.</p>(H,W: Image height and width (in pixels);  p<sub>jk</sub>: Grayscale intensity of the pixel at row j, column k;  μ: The average intensity of all pixels in the image.)
+        </p>
+
+        <!-- 第二处图片占位 -->
+
+        <div style="display: block; width: fit-content; margin-left: auto; margin-right: auto; background: #f9f9f9; padding: 6px; border-radius: 8px; border: 1px dashed #ccc; text-align: center;">
+          <img src="Contrast.png" alt="Contrast Metric Visualization" style="display: block; border-radius: 4px;">
+        </div>
+
+
+        <p style="margin-top: 1.5rem; font-weight: bold;">
+            Therefore，our method's values are closer to natural image distributions.
+        </p>
+    </div>
+
+  
+    </div>
+    
+    <h2 class="title is-4" style="color: #ffffff; margin-bottom: 1rem; text-align: center;">
+        Efficient Video Discrimination in Latent Space
+    </h2>
+    
+        <div class="content has-text-justified" style="font-size: 1.1rem; line-height: 1.2; color: #333; font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto;">
+            <p style="margin-bottom: 1.5rem;">
+              In the field of Video generation, a series of motion model-based methods (such as VideoJAM, Video-Lavit and MicroCinema) decode latent representations back into the pixel space for motion estimation or quality discrimination. Although effective, this process introduces computational overhead that cannot be ignored. Our experimental analysis indicates that the conversion from latent space to pixel space itself has become a system bottleneck: even without the reconstruction loss of the variational autoencoder (VAE), integrating the optical flow estimation module alone will cause extremely high memory usage. This prompts us to rethink the level of necessity in the discrimination process. The core insight of the flow distribution matching method proposed in this work lies in the fact that sufficient video structure and temporal coherence information have been retained in the latent space by the VAE encoder. Therefore, we abandoned the time-consuming pixel space reconstruction step and directly carried out efficient discrimination in the latent space, thereby achieving a significant speed improvement and memory usage reduction while ensuring the generation quality.
+    </div>
+  <br>
+  <hr>
+  <!-- 5min视频 -->
+<div class="container loading">
+    <h2 id="obj-comparison" class="title is-3 has-text-centered">5-min video generation </h2>
+    <div class="content has-text-justified" style="font-size: 1.5rem; line-height: 1.8;">
+      <p>
+        Even when the video duration is extended to 5 minutes, the generation quality remains highly consistent. The picture is stable, the details are rich, and no quality degradation is observed, which proves its outstanding ability in generating long sequences.
+      </p>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- 拉力赛车场景 -->
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251122-233851_rank0-15-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>A middle-aged man in a white coat with a beard is cooking while referring to a book in his hand. The background is the kitchen</p>
+    </div>
+  </div>
+
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-001409_rank0-16-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>A middle-aged man with a white beard, wearing a black coat, was looking at his mobile phone on the rooftop. Behind him were tall buildings. As time went by, the man grew older and older, with more wrinkles on his face and his hair turning white</p>
+    </div>
+  </div>
+
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-003851_rank0-17-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>On the e-sports field, several young people sat at the game table and started playing a game. Then, they won the game and everyone stood up to cheer</p>
+    </div>
+  </div>
+
+  <!-- 摩天大楼场景 -->
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-020848_rank0-21-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>The scene begins with the camera shuttling through the dark town, which is very eerie and terrifying. Gradually, the lens pulls back, revealing the entire city. The camera starts to circle around the entire city, and the picture takes on a spherical shape</p>
+    </div>
+  </div>
+
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-133427_rank0-48-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>The protagonist of the Dragon Ball animation, Goku, is right in the center of the screen, with lightning flashing from time to time around him and flashes of lightning light from his hand</p>
+    </div>
+  </div>
+
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-042350_rank0-26-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>A hacker, dressed in black, wearing a hat and black, was sitting in front of a computer typing. The computer screen was bright and very bright</p>
+    </div>
+  </div>
+
+  <!-- 继续添加其他场景... -->
+
+  <!-- 水下社区场景 -->
+  <div class="video-row loading" style="margin-bottom: 40px;">
+    <div style="display: flex; justify-content: center;">
+      <video controls preload="metadata" autoplay muted loop playsinline style="max-width: 80%; height: auto;">
+        <source src="5min/20251123-111915_rank0-43-0_latents.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div style="text-align: center; margin: 15px 0; font-size: 18px; color: #000000;">
+      <p>A man, wearing headphones, is sitting at a desk typing on a computer, surrounded by computers.</p>
+    </div>
+  </div>
   <script>
     function copyBibtex() {
       const bibtexText = `@article{huang2025selfforcing,
