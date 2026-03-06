@@ -1,0 +1,44 @@
+# denoising_step_list:
+# - 1000
+# - 750
+# - 500
+# - 250
+denoising_step_list:
+- 1000
+- 100
+warp_denoising_step: true # need to remove - 0 in denoising_step_list if warp_denoising_step is true
+use_diagonal_denoising: true
+not_use_clean_context_kv_update: true
+use_taehv: true
+num_frame_per_block: 3
+model_name: Wan2.1-T2V-1.3B
+model_kwargs:
+  local_attn_size: 12
+  timestep_shift: 5.0
+  sink_size: 3
+
+
+# inference
+data_path: /home/liujinxiu/LongLive/prompts/vidprom_filtered_extended_new50_reverse.txt
+output_folder: videos/long
+inference_iter: -1
+num_output_frames: 1200
+use_ema: false
+seed: 0
+num_samples: 1
+save_with_index: true
+global_sink: true
+context_noise: 0
+taehv_checkpoint_path: /home/liujinxiu/new_self-forcing/checkpoints/taew2_1.pth
+# /home/liujinxiu/new_self-forcing/20251002_2214_4500.pt
+# /home/liujinxiu/LongLive/longlive_models/models/longlive_base.pt
+generator_ckpt: /home/liujinxiu/new_self-forcing/20251002_2214_4500.pt
+lora_ckpt: /home/liujinxiu/LongLive/longlive_models/models/lora.pt
+
+adapter:
+  type: "lora"
+  rank: 256                    # LoRA rank (typical values: 8, 16, 32, 64)
+  alpha: 256                   # LoRA alpha (typically same as rank, but can be different)
+  dropout: 0.0                # LoRA dropout rate
+  dtype: "bfloat16"          # Data type for LoRA parameters: "bfloat16", "float16", "float32"
+  verbose: false              # Whether to print all target module names

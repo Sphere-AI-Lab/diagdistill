@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 AI Video Generation Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0F1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #2d1b69;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-glow: 0 0 50px rgba(139, 92, 246, 0.3);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: var(--shadow-glow);
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            border-radius: 2px;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input[type="range"] {
+            height: 6px;
+            background: linear-gradient(to right, var(--accent-purple), var(--accent-cyan));
+            border-radius: 3px;
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .neon-button {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            color: var(--text-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .neon-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .neon-button:hover::before {
+            left: 100%;
+        }
+
+        .neon-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .neon-button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, var(--accent-red), #dc2626);
+        }
+
+        .stop-btn:hover {
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        .quick-prompts {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .quick-prompt-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-prompt-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-cyan);
+            transform: translateX(5px);
+        }
+
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .toggle-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .toggle-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-cyan);
+        }
+
+        .toggle-card label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            margin-bottom: 0;
+            font-size: 0.85rem;
+            gap: 0.5rem;
+        }
+
+        .toggle-card input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+            transform: scale(1.2);
+            accent-color: var(--accent-cyan);
+        }
+
+        .progress-container {
+            margin: 1.5rem 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .video-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(0, 212, 255, 0.05), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-container:hover::before {
+            opacity: 1;
+        }
+
+        #videoFrame {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .buffer-info {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .playback-controls button {
+            margin: 0;
+        }
+
+        .frame-info {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #placeholderText {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin: 2rem 0;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .controls-row .control-group {
+            flex: 1;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            from {
+                text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(139, 92, 246, 0.8), 0 0 40px rgba(0, 212, 255, 0.3);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .toggle-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .playback-controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 DiagonalDistillation</h1>
+            <p>Create stunning videos with advanced AI technology</p>
+        </div>
+
+        <div class="main-layout">
+            <div class="glass-card">
+                <div class="card-title">⚙️ Generation Controls</div>
+
+                <div class="control-group">
+                    <label for="prompt">Prompt (detailed descriptions work better):</label>
+                    <textarea id="prompt" placeholder="Describe the video you want to generate in detail..."></textarea>
+
+                    <div style="margin-top: 1rem;">
+                        <label>✨ Quick Prompts:</label>
+                        <div class="quick-prompts">
+                            <button type="button" class="quick-prompt-btn" onclick="setQuickPrompt('quick-demo-1')">
+                                🌃 A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.
+                            </button>
+                            <button type="button" class="quick-prompt-btn" onclick="setQuickPrompt('quick-demo-2')">
+                                🐱 A white and orange tabby cat is seen happily darting through a dense garden, as if chasing something. Its eyes are wide and happy as it jogs forward, scanning the branches, flowers, and leaves as it walks. The path is narrow as it makes its way between all the plants. The scene is captured from a ground-level angle, following the cat closely, giving a low and intimate perspective. The image is cinematic with warm tones and a grainy texture.
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label for="seed">🎲 Seed:</label>
+                        <input type="number" id="seed" value="31337" min="0" max="999999">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="fps">🎬 Target FPS: <span id="fpsValue">6</span></label>
+                        <input type="range" id="fps" min="2" max="16" value="6" step="0.5">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>🚀 Advanced Options:</label>
+                    <div class="toggle-grid">
+                        <div class="toggle-card">
+                            <label>
+                                <input type="checkbox" id="torchCompile">
+                                🔥 torch.compile
+                            </label>
+                        </div>
+                        <div class="toggle-card">
+                            <label>
+                                <input type="checkbox" id="fp8Toggle">
+                                ⚡ FP8 Quantization
+                            </label>
+                        </div>
+                        <div class="toggle-card">
+                            <label>
+                                <input type="checkbox" id="taehvToggle">
+                                ⚡ TAEHV VAE
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="startBtn" class="neon-button" onclick="startGeneration()">
+                        🚀 Start Generation
+                    </button>
+                    <button id="stopBtn" class="neon-button stop-btn" onclick="stopGeneration()" disabled>
+                        ⏹️ Stop
+                    </button>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="progressText" style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">Ready to generate</div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="card-title">📺 Video Preview</div>
+
+                <div class="buffer-info">
+                    <strong>📦 Buffer:</strong> <span id="bufferCount">0</span> frames |
+                    <strong>📺 Displayed:</strong> <span id="displayedCount">0</span> frames
+                </div>
+
+                <div class="playback-controls">
+                    <button id="playBtn" class="neon-button" onclick="togglePlayback()" disabled>▶️ Play</button>
+                    <button id="resetBtn" class="neon-button" onclick="resetPlayback()" disabled>⏮️ Reset</button>
+                    <label for="playbackSpeed" style="color: var(--text-secondary);">Speed:</label>
+                    <select id="playbackSpeed" onchange="updatePlaybackSpeed()">
+                        <option value="0.25">0.25x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="0.75">0.75x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                </div>
+
+                <div id="statusContainer"></div>
+
+                <div class="video-container">
+                    <img id="videoFrame" src="" alt="Video frames will appear here" style="display: none;">
+                    <div id="placeholderText">✨ Click "Start Generation" to begin creating your video</div>
+                    <div id="frameInfo" class="frame-info"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let frameBuffer = [];  // Store all received frames
+        let currentFrameIndex = 0;
+        let isPlaying = false;
+        let playbackInterval = null;
+        let targetFps = 6;
+        let playbackSpeed = 1.0;
+        let startTime = null;
+        let lastReceiveTime = null;
+        let receiveCount = 0;
+        let receiveRate = 0;
+
+        // State tracking for one-time toggles
+        let torchCompileApplied = false;
+        let fp8Applied = false;
+
+        // Update slider values
+        document.getElementById('fps').oninput = function() {
+            targetFps = parseFloat(this.value);
+            document.getElementById('fpsValue').textContent = this.value;
+            updatePlaybackTiming();
+        };
+
+        // Handle toggle behavior and fetch current status
+        function updateToggleStates() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    torchCompileApplied = data.torch_compile_applied;
+                    fp8Applied = data.fp8_applied;
+
+                    // Update UI based on current state
+                    const torchToggle = document.getElementById('torchCompile');
+                    const fp8Toggle = document.getElementById('fp8Toggle');
+                    const taehvToggle = document.getElementById('taehvToggle');
+
+                    // Disable one-time toggles if already applied
+                    if (torchCompileApplied) {
+                        torchToggle.checked = true;
+                        torchToggle.disabled = true;
+                        torchToggle.parentElement.parentElement.style.opacity = '0.6';
+                    }
+
+                    if (fp8Applied) {
+                        fp8Toggle.checked = true;
+                        fp8Toggle.disabled = true;
+                        fp8Toggle.parentElement.parentElement.style.opacity = '0.6';
+                    }
+
+                    // Set TAEHV toggle based on current state
+                    taehvToggle.checked = data.current_use_taehv;
+                })
+                .catch(err => console.log('Status check failed:', err));
+        }
+
+        // Handle torch.compile toggle
+        document.getElementById('torchCompile').onchange = function() {
+            if (torchCompileApplied && !this.checked) {
+                this.checked = true; // Prevent unchecking
+                alert('torch.compile cannot be disabled once applied');
+            }
+        };
+
+        // Handle FP8 toggle
+        document.getElementById('fp8Toggle').onchange = function() {
+            if (fp8Applied && !this.checked) {
+                this.checked = true; // Prevent unchecking
+                alert('FP8 quantization cannot be disabled once applied');
+            }
+        };
+
+        // Update toggle states on page load
+        updateToggleStates();
+
+        // Socket event handlers
+        socket.on('connect', function() {
+            // showStatus('Connected to frontend-buffered server', 'info');
+        });
+
+        socket.on('status', function(data) {
+            // showStatus(data.message, 'info');
+        });
+
+        socket.on('progress', function(data) {
+            updateProgress(data.progress, data.message);
+        });
+
+        socket.on('frame_ready', function(data) {
+            // Add frame to buffer immediately
+            frameBuffer.push(data);
+            receiveCount++;
+
+            // Calculate receive rate
+            const now = Date.now();
+            if (lastReceiveTime) {
+                const interval = (now - lastReceiveTime) / 1000;
+                receiveRate = (1 / interval).toFixed(1);
+            }
+            lastReceiveTime = now;
+
+            updateBufferInfo();
+
+            // Auto-start playback when we have some frames
+            if (frameBuffer.length === 5 && !isPlaying) {
+                // showStatus('Auto-starting playback with buffer of 5 frames', 'info');
+                startPlayback();
+            }
+        });
+
+        socket.on('generation_complete', function(data) {
+            // showStatus(data.message + ` (Generated in ${data.generation_time})`, 'success');
+            enableControls(true);
+            const duration = startTime ? ((Date.now() - startTime) / 1000).toFixed(1) : 'unknown';
+            updateFrameInfo(`✅ Generation complete! ${data.total_frames} frames in ${duration}s`);
+
+            // Update toggle states after generation
+            updateToggleStates();
+        });
+
+        socket.on('error', function(data) {
+            // showStatus(`Error: ${data.message}`, 'error');
+            enableControls(true);
+        });
+
+        function startGeneration() {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            const seed = parseInt(document.getElementById('seed').value) || 31337;
+            const enableTorchCompile = document.getElementById('torchCompile').checked;
+            const enableFp8 = document.getElementById('fp8Toggle').checked;
+            const useTaehv = document.getElementById('taehvToggle').checked;
+
+            // Reset state
+            frameBuffer = [];
+            currentFrameIndex = 0;
+            receiveCount = 0;
+            receiveRate = 0;
+            stopPlayback();
+
+            enableControls(false);
+            startTime = Date.now();
+
+            socket.emit('start_generation', {
+                prompt: prompt,
+                seed: seed,
+                enable_torch_compile: enableTorchCompile,
+                enable_fp8: enableFp8,
+                use_taehv: useTaehv
+            });
+        }
+
+        function stopGeneration() {
+            socket.emit('stop_generation');
+            enableControls(true);
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                stopPlayback();
+            } else {
+                startPlayback();
+            }
+        }
+
+        function startPlayback() {
+            if (frameBuffer.length === 0) return;
+
+            isPlaying = true;
+            document.getElementById('playBtn').textContent = '⏸️ Pause';
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = false;
+
+            updatePlaybackTiming();
+            // showStatus('Playback started', 'info');
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            if (playbackInterval) {
+                clearInterval(playbackInterval);
+                playbackInterval = null;
+            }
+            document.getElementById('playBtn').textContent = '▶️ Play';
+        }
+
+        function resetPlayback() {
+            stopPlayback();
+
+            // Clear the entire frame buffer
+            frameBuffer = [];
+            currentFrameIndex = 0;
+            receiveCount = 0;
+            receiveRate = 0;
+
+            // Reset video display to initial state
+            const img = document.getElementById('videoFrame');
+            const placeholder = document.getElementById('placeholderText');
+
+            img.src = '';
+            img.style.display = 'none';
+            placeholder.style.display = 'block';
+
+            // Update UI
+            updateBufferInfo();
+            updateFrameInfo('🔄 Reset - buffer cleared');
+
+            // Disable playback controls since there's no content
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('resetBtn').disabled = true;
+        }
+
+        function updatePlaybackSpeed() {
+            playbackSpeed = parseFloat(document.getElementById('playbackSpeed').value);
+            if (isPlaying) {
+                updatePlaybackTiming();
+            }
+        }
+
+        function updatePlaybackTiming() {
+            if (playbackInterval) {
+                clearInterval(playbackInterval);
+            }
+
+            if (isPlaying) {
+                const interval = (1000 / targetFps) / playbackSpeed;
+                playbackInterval = setInterval(displayNextFrame, interval);
+            }
+        }
+
+        function displayNextFrame() {
+            if (currentFrameIndex >= frameBuffer.length) {
+                // Reached end of buffer
+                if (document.querySelector('#progressFill').style.width === '100%') {
+                    // Generation complete, stop playback
+                    stopPlayback();
+                    // showStatus('Playback complete', 'success');
+                }
+                return;
+            }
+
+            const frameData = frameBuffer[currentFrameIndex];
+            displayFrame(frameData);
+            currentFrameIndex++;
+
+            updateBufferInfo();
+        }
+
+        function displayFrame(frameData) {
+            const img = document.getElementById('videoFrame');
+            const placeholder = document.getElementById('placeholderText');
+
+            img.src = frameData.data;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            const elapsed = startTime ? ((Date.now() - startTime) / 1000).toFixed(1) : '0';
+            updateFrameInfo(`🎬 Frame ${frameData.frame_index + 1} | Block ${frameData.block_index + 1} | ${elapsed}s elapsed | ${targetFps} FPS @ ${playbackSpeed}x speed`);
+        }
+
+        function updateBufferInfo() {
+            document.getElementById('bufferCount').textContent = frameBuffer.length;
+            document.getElementById('displayedCount').textContent = currentFrameIndex;
+        }
+
+        function setQuickPrompt(type) {
+            const promptBox = document.getElementById('prompt');
+            if (type === 'quick-demo-1') {
+                promptBox.value = 'A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.';
+            } else if (type === 'quick-demo-2') {
+                promptBox.value = 'A white and orange tabby cat is seen happily darting through a dense garden, as if chasing something. Its eyes are wide and happy as it jogs forward, scanning the branches, flowers, and leaves as it walks. The path is narrow as it makes its way between all the plants. the scene is captured from a ground-level angle, following the cat closely, giving a low and intimate perspective. The image is cinematic with warm tones and a grainy texture. The scattered daylight between the leaves and plants above creates a warm contrast, accentuating the cat\'s orange fur. The shot is clear and sharp, with a shallow depth of field.';
+            }
+        }
+
+        function enableControls(enabled) {
+            document.getElementById('startBtn').disabled = !enabled;
+            document.getElementById('stopBtn').disabled = enabled;
+        }
+
+        function updateProgress(progress, message) {
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = message;
+        }
+
+        function updateFrameInfo(text) {
+            document.getElementById('frameInfo').textContent = text;
+        }
+
+        function showStatus(message, type) {
+            const container = document.getElementById('statusContainer');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+
+            container.insertBefore(statusDiv, container.firstChild);
+
+            // Remove old status messages (keep only last 3)
+            while (container.children.length > 3) {
+                container.removeChild(container.lastChild);
+            }
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (statusDiv.parentNode) {
+                    statusDiv.parentNode.removeChild(statusDiv);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
