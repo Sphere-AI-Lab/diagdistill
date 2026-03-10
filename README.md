@@ -3,17 +3,17 @@
 </p>
 <p align="center">
   <p align="center">
-    <a href="">Jinxiu Liu</a><sup>1</sup>
+    <a href="https://brandon-liu-jx.github.io/">Jinxiu Liu</a><sup>1</sup>
     ·
     <a href="">Xuanming Liu</a><sup>2</sup>
     ·
-    <a href="">Kangfu Mei</a><sup>3</sup>
+    <a href="https://kfmei.com/">Kangfu Mei</a><sup>3</sup>
     ·
-    <a href="">Yandong Wen</a><sup>2</sup>
+    <a href="https://ydwen.github.io/">Yandong Wen</a><sup>2</sup>
     ·
-    <a href="">Ming-Hsuan Yang</a><sup>4</sup>
+    <a href="https://faculty.ucmerced.edu/mhyang/">Ming-Hsuan Yang</a><sup>4</sup>
     ·
-    <a href="">Weiyang Liu</a><sup>5</sup>
+    <a href="https://wyliu.com/">Weiyang Liu</a><sup>5</sup>
     <sup>1</sup>South China University of Technology
     <sup>2</sup>Westlake University
     <sup>3</sup>Johns Hopkins University
