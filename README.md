@@ -14,11 +14,12 @@
     <a href="https://faculty.ucmerced.edu/mhyang/">Ming-Hsuan Yang</a><sup>4</sup>
     ·
     <a href="https://wyliu.com/">Weiyang Liu</a><sup>5</sup>
-    <sup>1</sup>South China University of Technology
-    <sup>2</sup>Westlake University
-    <sup>3</sup>Johns Hopkins University
-    <sup>4</sup>University of California, Merced
-    <sup>5</sup>The Chinese University of Hong Kong
+    <br/>
+    <sub><sup>1</sup>South China University of Technology</sub>
+    <sub><sup>2</sup>Westlake University</sub>
+    <sub><sup>3</sup>Johns Hopkins University</sub>
+    <sub><sup>4</sup>University of California, Merced</sub>
+    <sub><sup>5</sup>The Chinese University of Hong Kong</sub>
   </p>
   <h3 align="center"><a href="">Paper</a> | <a href="https://spherelab.ai/diagdistill">Website</a> | <a href="https://huggingface.co/gdhe17/Self-Forcing/tree/main">Models (HuggingFace)</a></h3>
 </p>
