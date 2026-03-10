@@ -1,6 +1,5 @@
 <p align="center">
 <h1 align="center">STREAMING AUTOREGRESSIVE VIDEO GENERATION VIA DIAGONAL DISTILLATION</h1>
-<h3 align="center">Bridging the Train-Test Gap in Autoregressive Video Diffusion</h3>
 </p>
 <p align="center">
   <p align="center">
