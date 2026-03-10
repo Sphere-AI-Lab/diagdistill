@@ -29,12 +29,9 @@
 We propose ​Diagonal Distillation, a new method for making high-quality video generation much faster. Current methods are either too slow or create videos with poor motion and errors over time.
 
 <p align="center">
-  <a href="https://github.com/Sphere-AI-Lab/diagdistill/raw/main/assets/new_demo.mp4">
-    <img src="./assets/video-first-frame.png" alt="Demo video (click to play)" width="900"/>
-  </a>
-</p>
-<p align="center">
-  <sub>Click the image to play the demo video.</sub>
+  <video src="./assets/new_demo.mp4" controls width="900">
+    Your browser does not support the video tag.
+  </video>
 </p>
 
 ---
