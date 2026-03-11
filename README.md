@@ -1,5 +1,4 @@
 <p align="center">
-  ![logo](https://github.com/user-attachments/assets/0fa7de14-1cac-41fe-b066-023cd68c91f4)
 <h1 align="center">STREAMING AUTOREGRESSIVE VIDEO GENERATION VIA DIAGONAL DISTILLATION</h1>
 </p>
 <p align="center">
