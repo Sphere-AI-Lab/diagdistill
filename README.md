@@ -30,7 +30,7 @@ We propose ​Diagonal Distillation, a new method for making high-quality video 
 
 ---
 
-
+https://github.com/Sphere-AI-Lab/diagdistill/blob/main/assets/redpandacompress_new_demo.mp4
 
 
 ## Requirements
