@@ -108,10 +108,13 @@ This codebase is built on top of the open-source implementation of [LongLive](ht
 ## Citation
 If you find this codebase useful for your research, please kindly cite our paper:
 ```
-<!-- @article{huang2025selfforcing,
-  title={Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion},
-  author={Huang, Xun and Li, Zhengqi and He, Guande and Zhou, Mingyuan and Shechtman, Eli},
-  journal={arXiv preprint arXiv:2506.08009},
-  year={2025}
-} -->
+@misc{liu2026streamingautoregressivevideogeneration,
+      title={Streaming Autoregressive Video Generation via Diagonal Distillation},
+      author={Jinxiu Liu and Xuanming Liu and Kangfu Mei and Yandong Wen and Ming-HsuanYang and Weiyang Liu},
+      year={2026},
+      eprint={2603.09488},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2603.09488},
+}
 ```
