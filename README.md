@@ -21,6 +21,9 @@
     <sub><sup>4</sup>University of California, Merced</sub>
     <sub><sup>5</sup>The Chinese University of Hong Kong</sub>
   </p>
+  <p align="center">
+    <img src="assets/logo.jpg" alt="Diagonal Distillation logo" width="520"/>
+  </p>
   <h3 align="center"><a href="https://arxiv.org/abs/2603.09488">Paper</a> | <a href="https://spherelab.ai/diagdistill">Website</a></h3>
 </p>
 
@@ -30,7 +33,7 @@ We propose ​Diagonal Distillation, a new method for making high-quality video 
 
 ---
 
-
+https://github.com/user-attachments/assets/97536e89-b784-45ec-980c-e1318cfda185
 
 
 
