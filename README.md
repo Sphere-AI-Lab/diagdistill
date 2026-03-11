@@ -1,4 +1,7 @@
 <p align="center">
+  <img src="assets/logo.jpg" alt="Diagonal Distillation logo" width="520"/>
+</p>
+<p align="center">
 <h1 align="center">STREAMING AUTOREGRESSIVE VIDEO GENERATION VIA DIAGONAL DISTILLATION</h1>
 </p>
 <p align="center">
