@@ -52,7 +52,7 @@ https://github.com/user-attachments/assets/97536e89-b784-45ec-980c-e1318cfda185
 </p>
 
 
-3️⃣ **omparative visualization of temporal training strategies for autoregressive video generation using Causal DiT. Four panels illustrate: (a) Teacher Forcing (green boxes for ground-truth frames), (b) Diffusion Forcing (red boxes for noisy latents), (c) Self Forcing (red boxes for model’s own predictions), and (d) Di- agonal Forcing (Ours) (mixed green/red boxes in diagonal patterns). Each row represents sequential frame generation, with arrows indicating causal dependencies. The diagonal pattern in (d) highlights the core inno- vation—blending clean past frames with recent model-generated ones to align training/inference distributions. This visual comparison underscores how Diagonal Forcing bridges gaps in robustness and coherence seen in baseline methods.** 
+3️⃣ **Comparative visualization of temporal training strategies for autoregressive video generation using Causal DiT. Four panels illustrate: (a) Teacher Forcing (green boxes for ground-truth frames), (b) Diffusion Forcing (red boxes for noisy latents), (c) Self Forcing (red boxes for model’s own predictions), and (d) Di- agonal Forcing (Ours) (mixed green/red boxes in diagonal patterns). Each row represents sequential frame generation, with arrows indicating causal dependencies. The diagonal pattern in (d) highlights the core inno- vation—blending clean past frames with recent model-generated ones to align training/inference distributions. This visual comparison underscores how Diagonal Forcing bridges gaps in robustness and coherence seen in baseline methods.** 
 
 <p align="center">
     <img src="assets/new_cropped (1)_page-0001.jpg" style="border-radius: 15px">
