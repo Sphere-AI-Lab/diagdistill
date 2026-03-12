@@ -89,7 +89,7 @@ Note:
 * The speed can be improved by enabling `torch.compile`, [TAEHV-VAE](https://github.com/madebyollin/taehv/), or using FP8 Linear layers, although the latter two options may sacrifice quality. It is recommended to use `torch.compile` if possible and enable TAEHV-VAE if further speedup is needed.
 
 ### Inference
-Example inference script using the chunk-wise autoregressive checkpoint trained with DMD:
+Example inference script using the checkpoint trained with our proposed method (Diagonal Distillation)：
 ```
 bash inference.sh
 ```

@@ -24,7 +24,7 @@ model_kwargs:
 data_path: diadistill_models/prompts/vidprom_filtered_extended.txt
 output_folder: videos/long
 inference_iter: -1
-num_output_frames: 45
+num_output_frames: 21
 use_ema: false
 seed: 0
 num_samples: 1
