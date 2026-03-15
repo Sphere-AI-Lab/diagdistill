@@ -91,7 +91,10 @@ Then set `configs/exp_stage1_all4_odeinit.yaml` `generator_ckpt` to one of:
 
 <!--
 Note:
-* **Our model works better with long, detailed prompts** since it's trained with such prompts. We will integrate prompt extension into the codebase (similar to [Wan2.1](https://github.com/Wan-Video/Wan2.1/tree/main?tab=readme-ov-file#2-using-prompt-extention)) in the future. For now, it is recommended to use third-party LLMs (such as GPT-4o) to extend your prompt before providing to the model.
+* **Our model works better with long, detailed prompts** since it's trained with such prompts. A prompt extension module is available in `wan/utils/prompt_extend.py` (ported from [Wan2.1](https://github.com/Wan-Video/Wan2.1/tree/main?tab=readme-ov-file#2-using-prompt-extention)) and supports multiple backends:
+  - **DashScope** (Alibaba Cloud Qwen) – set `DASH_API_KEY`
+  - **[MiniMax](https://www.minimaxi.com/)** or any OpenAI-compatible API – set `MINIMAX_API_KEY` (or `OPENAI_API_KEY` + `OPENAI_BASE_URL`). MiniMax M2.5 offers a 204K context window and is a cost-effective choice for prompt expansion.
+  - **Local Qwen models** – no API key needed; requires a downloaded model.
 * You may want to adjust FPS so it plays smoothly on your device.
 * The speed can be improved by enabling `torch.compile`, [TAEHV-VAE](https://github.com/madebyollin/taehv/), or using FP8 Linear layers, although the latter two options may sacrifice quality. It is recommended to use `torch.compile` if possible and enable TAEHV-VAE if further speedup is needed.
 -->
