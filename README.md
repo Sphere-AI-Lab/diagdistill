@@ -102,12 +102,6 @@ Note:
 * You may want to adjust FPS so it plays smoothly on your device.
 * The speed can be improved by enabling `torch.compile`, [TAEHV-VAE](https://github.com/madebyollin/taehv/), or using FP8 Linear layers, although the latter two options may sacrifice quality. It is recommended to use `torch.compile` if possible and enable TAEHV-VAE if further speedup is needed.
 
-### Inference
-Example inference script using the checkpoint trained with our proposed method (Diagonal Distillation)：
-```
-bash inference.sh
-```
-
 ## Training
 
 ### Diagonal Distillation Training 
@@ -120,6 +114,12 @@ Current codebase training is a two-stage pipeline:
 * **Stage 2 (`exp_stage2_diag_from_stage1`)**: Resume from the Stage-1 checkpoint (default: `checkpoint_model_001000/model.pt`, i.e., Stage-1 1000-step checkpoint) and continue training with diagonal-denoising settings for better later-chunk temporal quality.
 
 Our training run uses 600 iterations and completes in under 2 hours using 64 H100 GPUs. By implementing gradient accumulation, it should be possible to reproduce the results in less than 16 hours using 8 H100 GPUs.
+
+## Inference
+Use a checkpoint produced by training (for example Stage-2 or Stage-1 output) by setting `generator_ckpt` in `configs/diadistill_inference.yaml`, then run:
+```
+bash inference.sh
+```
 
 ## Acknowledgements
 This codebase is built on top of the open-source implementation of [LongLive](https://github.com/NVlabs/LongLive) by [yukang2017](https://github.com/yukang2017) and the [Wan2.1](https://github.com/Wan-Video/Wan2.1) repo.
