@@ -89,10 +89,12 @@ Then set `configs/exp_stage1_all4_odeinit.yaml` `generator_ckpt` to one of:
 * `checkpoints/ode_init.pt`
 * `checkpoints/chunkwise/causal_forcing.pt`
 
+<!--
 Note:
 * **Our model works better with long, detailed prompts** since it's trained with such prompts. We will integrate prompt extension into the codebase (similar to [Wan2.1](https://github.com/Wan-Video/Wan2.1/tree/main?tab=readme-ov-file#2-using-prompt-extention)) in the future. For now, it is recommended to use third-party LLMs (such as GPT-4o) to extend your prompt before providing to the model.
 * You may want to adjust FPS so it plays smoothly on your device.
 * The speed can be improved by enabling `torch.compile`, [TAEHV-VAE](https://github.com/madebyollin/taehv/), or using FP8 Linear layers, although the latter two options may sacrifice quality. It is recommended to use `torch.compile` if possible and enable TAEHV-VAE if further speedup is needed.
+-->
 
 ## Training
 
@@ -104,6 +106,8 @@ Current codebase training is a two-stage pipeline:
 
 * **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from either `checkpoints/ode_init.pt` (Self-Forcing ODE init) or `checkpoints/chunkwise/causal_forcing.pt` (Causal-Forcing init), then run base distillation training to obtain a stable stage-1 checkpoint.
 * **Stage 2 (`exp_stage2_diag_from_stage1`)**: Resume from the Stage-1 checkpoint (default: `checkpoint_model_001000/model.pt`, i.e., Stage-1 1000-step checkpoint) and continue training with diagonal-denoising settings for better later-chunk temporal quality.
+
+`Stage 1` is optional. `Stage 2` can directly load `longlive_models/LongLive-1.3B/models/longlive_base.pt` as the initialization checkpoint.
 
 ## Inference
 Use a checkpoint produced by training (for example Stage-2 or Stage-1 output) by setting `generator_ckpt` in `configs/diadistill_inference.yaml`, then run:
