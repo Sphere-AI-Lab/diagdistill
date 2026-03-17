@@ -59,14 +59,6 @@ https://github.com/user-attachments/assets/97536e89-b784-45ec-980c-e1318cfda185
 </p>
 
 
-## Requirements
-We tested this repo on the following setup:
-* Nvidia GPU with at least 24 GB memory (RTX 4090, A100, and H100 are tested).
-* Linux operating system.
-* 64 GB RAM.
-
-Other hardware setup could also work but hasn't been tested.
-
 ## Installation
 Create a conda environment and install dependencies:
 ```
