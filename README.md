@@ -116,7 +116,7 @@ bash train_two_stage_ode_then_diag.sh
 ```
 Current codebase training is a two-stage pipeline:
 
-* **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from `checkpoints/ode_init.pt` and run base distillation training to obtain a stable stage-1 checkpoint.
+* **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from either `checkpoints/ode_init.pt` (Self-Forcing ODE init) or `checkpoints/chunkwise/causal_forcing.pt` (Causal-Forcing init), then run base distillation training to obtain a stable stage-1 checkpoint.
 * **Stage 2 (`exp_stage2_diag_from_stage1`)**: Resume from the stage-1 checkpoint and continue training with diagonal-denoising settings for better later-chunk temporal quality.
 
 Our training run uses 600 iterations and completes in under 2 hours using 64 H100 GPUs. By implementing gradient accumulation, it should be possible to reproduce the results in less than 16 hours using 8 H100 GPUs.
