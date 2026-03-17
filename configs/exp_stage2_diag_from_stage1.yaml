@@ -1,16 +1,15 @@
-generator_ckpt: longlive_models/models/longlive_base.pt
+generator_ckpt: __STAGE1_CKPT__
 schedule_config_path: configs/shared_schedule.yaml
 generator_fsdp_wrap_strategy: size
 real_score_fsdp_wrap_strategy: size
 fake_score_fsdp_wrap_strategy: size
-# real_name: Wan2.1-T2V-1.3B
 real_name: Wan2.1-T2V-14B
 fake_name: Wan2.1-T2V-1.3B
 text_encoder_fsdp_wrap_strategy: size
 denoising_step_list:
 - 1000
 - 100
-warp_denoising_step: true # need to remove - 0 in denoising_step_list if warp_denoising_step is true
+warp_denoising_step: true
 ts_schedule: false
 num_train_timestep: 1000
 timestep_shift: 5.0
@@ -34,21 +33,21 @@ gradient_accumulation_steps: 1
 ema_weight: 0.99
 ema_start_step: 200
 total_batch_size: 64
-log_iters: 75
+log_iters: 500
 max_checkpoints: 5
-max_iters: 6000
+max_iters: 2000
 
 negative_prompt: '色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走'
 dfake_gen_update_ratio: 5
 image_or_video_shape:
 - 1
-- 21 # unused in sequential training
+- 21
 - 16
 - 60
 - 104
 distribution_loss: dmd
 trainer: score_distillation
-use_diagonal_denoising: false
+use_diagonal_denoising: true
 use_motion_loss: true
 use_flow_reg_loss: true
 flow_reg_ema_decay: 0.95
@@ -59,7 +58,7 @@ lambda_spatial_dmd: 4.0
 lambda_flow_dmd: 4.0
 gamma_temporal: 1.0
 lambda_reg: 0.0
-reg_loss_type: mse # mse | charbonnier | cauchy
+reg_loss_type: mse
 reg_loss_eps: 0.001
 reg_loss_cauchy_c: 0.01
 use_teacher_4step_regression: true
@@ -76,7 +75,6 @@ model_kwargs:
   local_attn_size: 12
   sink_size: 3
 
-# Visualization
 vis_interval: 200
 vis_ema: false
 vis_video_lengths:

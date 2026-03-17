@@ -9,6 +9,25 @@ num_training_frames: 21
 gc_interval: 100
 context_noise: 0
 causal: true
+use_diagonal_denoising: false
+use_flow_reg_loss: false
+flow_reg_ema_decay: 0.95
+motion_head_hidden_dim: 64
+motion_head_num_layers: 2
+motion_head_kernel_size: 1
+lambda_spatial_dmd: 1.0
+lambda_flow_dmd: 1.0
+gamma_temporal: 1.0
+lambda_reg: 1.0
+reg_loss_type: mse # mse | charbonnier | cauchy
+reg_loss_eps: 0.001
+reg_loss_cauchy_c: 0.01
+use_teacher_4step_regression: false
+teacher_4step_list:
+- 1000
+- 750
+- 500
+- 250
 
 ckpt_step: 0
 prompt_name: MovieGenVideoBench

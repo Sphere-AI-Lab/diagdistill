@@ -9,6 +9,7 @@ import torch
 from pipeline import SelfForcingTrainingPipeline
 from utils.loss import get_denoising_loss
 from utils.wan_wrapper import WanDiffusionWrapper, WanTextEncoder, WanVAEWrapper
+from utils.denoising_schedule import resolve_denoising_steps
 
 from utils.debug_option import DEBUG
 
@@ -25,6 +26,17 @@ class BaseModel(nn.Module):
             if args.warp_denoising_step:
                 timesteps = torch.cat((self.scheduler.timesteps.cpu(), torch.tensor([0], dtype=torch.float32)))
                 self.denoising_step_list = timesteps[1000 - self.denoising_step_list]
+        else:
+            self.denoising_step_list = None
+        self.warmup_mid_steps = None
+        warmup_mid_steps_raw = getattr(args, "warmup_mid_steps_raw", None)
+        if warmup_mid_steps_raw:
+            self.warmup_mid_steps = resolve_denoising_steps(
+                raw_steps=warmup_mid_steps_raw,
+                scheduler_timesteps=self.scheduler.timesteps,
+                warp_denoising_step=getattr(args, "warp_denoising_step", False),
+                device=self.device,
+            )
 
     def _initialize_models(self, args, device):
         self.real_model_name = getattr(args, "real_name", "Wan2.1-T2V-1.3B")
@@ -239,8 +251,9 @@ class SelfForcingModel(BaseModel):
             last_step_only=self.args.last_step_only,
             num_max_frames=num_training_frames,
             context_noise=self.args.context_noise,
-            use_dia_forcing=getattr(self.args, "use_dia_forcing", False),
             local_attn_size=local_attn_size,
             slice_last_frames=slice_last_frames,
             num_training_frames=num_training_frames,
+            use_diagonal_denoising=getattr(self.args, "use_diagonal_denoising", False),
+            warmup_mid_steps=self.warmup_mid_steps,
         )

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from utils.wan_wrapper import WanDiffusionWrapper
 from utils.scheduler import SchedulerInterface
+from utils.denoising_schedule import build_block_denoising_steps
 from typing import List, Optional, Tuple
 import torch
 import torch.distributed as dist
@@ -33,7 +34,6 @@ class SelfForcingTrainingPipeline:
         self.frame_seq_length = 1560
         self.num_frame_per_block = num_frame_per_block
         self.context_noise = context_noise
-        self.use_dia_forcing = bool(kwargs.get("use_dia_forcing", False))
         self.i2v = False
 
         self.kv_cache1 = None
@@ -42,6 +42,8 @@ class SelfForcingTrainingPipeline:
         self.independent_first_frame = independent_first_frame
         self.same_step_across_blocks = same_step_across_blocks
         self.last_step_only = last_step_only
+        self.use_diagonal_denoising = bool(kwargs.get("use_diagonal_denoising", False))
+        self.warmup_mid_steps = kwargs.get("warmup_mid_steps", None)
         # Support local_attn_size as int or list (scheduled by timestep); compute KV cache frames internally
         self.local_attn_size = kwargs.get("local_attn_size", -1)
         if not isinstance(self.local_attn_size, int) and hasattr(self.local_attn_size, "__iter__"):
@@ -92,6 +94,38 @@ class SelfForcingTrainingPipeline:
         if dist.is_initialized():
             dist.broadcast(indices, src=0)  # Broadcast the random indices to all ranks
         return indices.tolist()
+
+    def _get_base_step_tensor(self, device: torch.device) -> torch.Tensor:
+        if isinstance(self.denoising_step_list, torch.Tensor):
+            return self.denoising_step_list.to(device=device)
+        return torch.tensor(self.denoising_step_list, dtype=torch.long, device=device)
+
+    def _get_block_step_list(self, block_index: int, device: torch.device) -> torch.Tensor:
+        base_steps = self._get_base_step_tensor(device=device)
+        return build_block_denoising_steps(
+            base_steps=base_steps,
+            block_index=block_index,
+            use_diagonal_denoising=self.use_diagonal_denoising,
+            warmup_mid_steps=self.warmup_mid_steps,
+        )
+
+    def _resolve_local_attn_for_step(self, current_timestep, fallback_idx: int) -> Optional[int]:
+        if not isinstance(self.local_attn_size, (list, tuple)):
+            return None
+
+        base_steps = self.denoising_step_list
+        if isinstance(base_steps, torch.Tensor):
+            matches = torch.nonzero(base_steps == current_timestep, as_tuple=False)
+            step_pos = int(matches[0].item()) if matches.numel() > 0 else fallback_idx
+        else:
+            current = int(current_timestep.item()) if isinstance(current_timestep, torch.Tensor) else int(current_timestep)
+            try:
+                step_pos = list(base_steps).index(current)
+            except ValueError:
+                step_pos = fallback_idx
+
+        step_pos = min(step_pos, len(self.local_attn_size) - 1)
+        return int(self.local_attn_size[step_pos])
 
     def generate_chunk_with_cache(
         self,
@@ -146,7 +180,8 @@ class SelfForcingTrainingPipeline:
         # Prepare output tensor
         output = torch.zeros_like(noise)
         
-        # Randomly select denoising steps (synced across ranks)
+        # Randomly select denoising steps (synced across ranks).
+        # Sample on the base schedule and clip per block for diagonal schedules.
         num_denoising_steps = len(self.denoising_step_list)
         exit_flags = self.generate_and_sync_list(len(all_num_frames), num_denoising_steps, device=noise.device)
         
@@ -177,23 +212,23 @@ class SelfForcingTrainingPipeline:
             
             if (not dist.is_initialized() or dist.get_rank() == 0) and LOG_GPU_MEMORY and block_index == 0:
                 log_gpu_memory(f"SeqTrain-Pipeline: Before first block generation", device=noise.device, rank=dist.get_rank() if dist.is_initialized() else 0)
-                
+
             noisy_input = noise[:, local_start_frame:local_start_frame + current_num_frames]
-            
+            block_step_list = self._get_block_step_list(block_index=block_index, device=noise.device)
+            raw_exit_idx = exit_flags[0] if self.same_step_across_blocks else exit_flags[block_index]
+            block_exit_idx = min(raw_exit_idx, len(block_step_list) - 1)
+
             # Spatial denoising loop
-            for step_idx, current_timestep in enumerate(self.denoising_step_list):
+            for step_idx, current_timestep in enumerate(block_step_list):
                 # If scheduled, set local_attn_size dynamically per timestep
                 if isinstance(self.local_attn_size, (list, tuple)) or (hasattr(self.local_attn_size, "__iter__") and not isinstance(self.local_attn_size, (str, bytes))):
-                    self.generator.model.local_attn_size = int(self.local_attn_size[step_idx])
+                    local_attn_value = self._resolve_local_attn_for_step(current_timestep, fallback_idx=step_idx)
+                    self.generator.model.local_attn_size = int(local_attn_value)
                     if (not dist.is_initialized() or dist.get_rank() == 0) and DEBUG:
                         print(f"[denoise step {step_idx}] timestep={float(current_timestep)} local_attn_size={self.generator.model.local_attn_size}")
-                    self._set_all_modules_max_attention_size(int(self.local_attn_size[step_idx]))
-                exit_flag = (
-                    step_idx == exit_flags[0]
-                    if self.same_step_across_blocks
-                    else step_idx == exit_flags[block_index]
-                )
-                
+                    self._set_all_modules_max_attention_size(int(local_attn_value))
+                exit_flag = step_idx == block_exit_idx
+
                 timestep = torch.ones(
                     [batch_size, current_num_frames],
                     device=noise.device,
@@ -214,10 +249,10 @@ class SelfForcingTrainingPipeline:
                             crossattn_cache=self.crossattn_cache,
                             current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
                         )
-                        
+
                         # Add noise for the next step
-                        if step_idx < len(self.denoising_step_list) - 1:
-                            next_timestep = self.denoising_step_list[step_idx + 1]
+                        if step_idx < len(block_step_list) - 1:
+                            next_timestep = block_step_list[step_idx + 1]
                             noisy_input = self.scheduler.add_noise(
                                 denoised_pred.flatten(0, 1),
                                 torch.randn_like(denoised_pred.flatten(0, 1)),
@@ -247,42 +282,24 @@ class SelfForcingTrainingPipeline:
             # Record output
             output[:, local_start_frame:local_start_frame + current_num_frames] = denoised_pred
             
-            # Update cache according to training dia-forcing toggle.
-            if self.use_dia_forcing:
-                # In dia-forcing mode, match inference-style cache refresh:
-                # use the final denoised prediction directly and skip the last block.
-                if block_index != len(all_num_frames) - 1:
-                    context_timestep = torch.ones_like(timestep) * self.context_noise
-                    if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
-                        print(f"[SeqTrain-Pipeline] Dia forcing cache update with context_noise={self.context_noise}")
-                    with torch.no_grad():
-                        self.generator(
-                            noisy_image_or_video=denoised_pred,
-                            conditional_dict=conditional_dict,
-                            timestep=context_timestep,
-                            kv_cache=self.kv_cache1,
-                            crossattn_cache=self.crossattn_cache,
-                            current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                        )
-            else:
-                # Legacy behavior: explicitly add context noise before cache refresh.
-                context_timestep = torch.ones_like(timestep) * self.context_noise
-                context_noisy = self.scheduler.add_noise(
-                    denoised_pred.flatten(0, 1),
-                    torch.randn_like(denoised_pred.flatten(0, 1)),
-                    context_timestep.flatten(0, 1),
-                ).unflatten(0, denoised_pred.shape[:2])
-                if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
-                    print(f"[SeqTrain-Pipeline] Updating cache with context_noise={self.context_noise}")
-                with torch.no_grad():
-                    self.generator(
-                        noisy_image_or_video=context_noisy,
-                        conditional_dict=conditional_dict,
-                        timestep=context_timestep,
-                        kv_cache=self.kv_cache1,
-                        crossattn_cache=self.crossattn_cache,
-                        current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                    )
+            # Legacy behavior: explicitly add context noise before cache refresh.
+            context_timestep = torch.ones_like(timestep) * self.context_noise
+            context_noisy = self.scheduler.add_noise(
+                denoised_pred.flatten(0, 1),
+                torch.randn_like(denoised_pred.flatten(0, 1)),
+                context_timestep.flatten(0, 1),
+            ).unflatten(0, denoised_pred.shape[:2])
+            if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
+                print(f"[SeqTrain-Pipeline] Updating cache with context_noise={self.context_noise}")
+            with torch.no_grad():
+                self.generator(
+                    noisy_image_or_video=context_noisy,
+                    conditional_dict=conditional_dict,
+                    timestep=context_timestep,
+                    kv_cache=self.kv_cache1,
+                    crossattn_cache=self.crossattn_cache,
+                    current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
+                )
             
             local_start_frame += current_num_frames
         
@@ -292,22 +309,22 @@ class SelfForcingTrainingPipeline:
         # Compute returned timestep information
         if not self.same_step_across_blocks:
             denoised_timestep_from, denoised_timestep_to = None, None
-        elif exit_flags[0] == len(self.denoising_step_list) - 1:
-            denoised_timestep_to = 0
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]].cuda()).abs(), dim=0
-            ).item()
+            sim_step = exit_flags[0] + 1
         else:
-            denoised_timestep_to = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0] + 1].cuda()).abs(), dim=0
-            ).item()
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]].cuda()).abs(), dim=0
-            ).item()
-        
+            block0_steps = self._get_block_step_list(block_index=0, device=self.scheduler.timesteps.device)
+            block0_exit_idx = min(exit_flags[0], len(block0_steps) - 1)
+            timesteps = self.scheduler.timesteps
+            from_idx = 1000 - torch.argmin((timesteps - block0_steps[block0_exit_idx]).abs(), dim=0).item()
+            if block0_exit_idx == len(block0_steps) - 1:
+                denoised_timestep_to = 0
+            else:
+                denoised_timestep_to = 1000 - torch.argmin((timesteps - block0_steps[block0_exit_idx + 1]).abs(), dim=0).item()
+            denoised_timestep_from = from_idx
+            sim_step = block0_exit_idx + 1
+
         if return_sim_step:
-            return output, denoised_timestep_from, denoised_timestep_to, exit_flags[0] + 1
-        
+            return output, denoised_timestep_from, denoised_timestep_to, sim_step
+
         return output, denoised_timestep_from, denoised_timestep_to
 
     def inference_with_trajectory(
@@ -399,19 +416,20 @@ class SelfForcingTrainingPipeline:
         for block_index, current_num_frames in enumerate(all_num_frames):
             noisy_input = noise[
                 :, current_start_frame - num_input_frames:current_start_frame + current_num_frames - num_input_frames]
+            block_step_list = self._get_block_step_list(block_index=block_index, device=noise.device)
+            raw_exit_idx = exit_flags[0] if self.same_step_across_blocks else exit_flags[block_index]
+            block_exit_idx = min(raw_exit_idx, len(block_step_list) - 1)
 
             # Step 3.1: Spatial denoising loop
-            for index, current_timestep in enumerate(self.denoising_step_list):
+            for index, current_timestep in enumerate(block_step_list):
                 # If scheduled, set local_attn_size dynamically per timestep
                 if isinstance(self.local_attn_size, (list, tuple)):
-                    self.generator.model.local_attn_size = int(self.local_attn_size[index])
+                    local_attn_value = self._resolve_local_attn_for_step(current_timestep, fallback_idx=index)
+                    self.generator.model.local_attn_size = int(local_attn_value)
                     if not dist.is_initialized() or dist.get_rank() == 0 and DEBUG:
                         print(f"[denoise step {index}] timestep={float(current_timestep)} local_attn_size={self.generator.model.local_attn_size}")
-                    self._set_all_modules_max_attention_size(int(self.local_attn_size[index]))
-                if self.same_step_across_blocks:
-                    exit_flag = (index == exit_flags[0])
-                else:
-                    exit_flag = (index == exit_flags[block_index])  # Only backprop at the randomly selected timestep (consistent across all ranks)
+                    self._set_all_modules_max_attention_size(int(local_attn_value))
+                exit_flag = (index == block_exit_idx)  # Clip if this block has fewer denoising steps.
                 timestep = torch.ones(
                     [batch_size, current_num_frames],
                     device=noise.device,
@@ -428,7 +446,7 @@ class SelfForcingTrainingPipeline:
                             crossattn_cache=self.crossattn_cache,
                             current_start=current_start_frame * self.frame_seq_length
                         )
-                        next_timestep = self.denoising_step_list[index + 1]
+                        next_timestep = block_step_list[index + 1]
                         noisy_input = self.scheduler.add_noise(
                             denoised_pred.flatten(0, 1),
                             torch.randn_like(denoised_pred.flatten(0, 1)),
@@ -467,8 +485,8 @@ class SelfForcingTrainingPipeline:
 
             # Step 3.3: rerun with timestep zero to update the cache
             context_timestep = torch.ones_like(timestep) * self.context_noise
-            # add context noise
-            denoised_pred = self.scheduler.add_noise(
+            # Keep regression target clean; only cache-refresh branch gets context noise.
+            context_noisy = self.scheduler.add_noise(
                 denoised_pred.flatten(0, 1),
                 torch.randn_like(denoised_pred.flatten(0, 1)),
                 context_timestep * torch.ones(
@@ -479,7 +497,7 @@ class SelfForcingTrainingPipeline:
                 print(f"rank {dist.get_rank()}, rerun_for_cache")
             with torch.no_grad():
                 self.generator(
-                    noisy_image_or_video=denoised_pred,
+                    noisy_image_or_video=context_noisy,
                     conditional_dict=conditional_dict,
                     timestep=context_timestep,
                     kv_cache=self.kv_cache1,
@@ -496,18 +514,20 @@ class SelfForcingTrainingPipeline:
         # Step 3.5: Return the denoised timestep
         if not self.same_step_across_blocks:
             denoised_timestep_from, denoised_timestep_to = None, None
-        elif exit_flags[0] == len(self.denoising_step_list) - 1:
-            denoised_timestep_to = 0
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]].cuda()).abs(), dim=0).item()
+            sim_step = exit_flags[0] + 1
         else:
-            denoised_timestep_to = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0] + 1].cuda()).abs(), dim=0).item()
-            denoised_timestep_from = 1000 - torch.argmin(
-                (self.scheduler.timesteps.cuda() - self.denoising_step_list[exit_flags[0]].cuda()).abs(), dim=0).item()
+            block0_steps = self._get_block_step_list(block_index=0, device=self.scheduler.timesteps.device)
+            block0_exit_idx = min(exit_flags[0], len(block0_steps) - 1)
+            timesteps = self.scheduler.timesteps
+            denoised_timestep_from = 1000 - torch.argmin((timesteps - block0_steps[block0_exit_idx]).abs(), dim=0).item()
+            if block0_exit_idx == len(block0_steps) - 1:
+                denoised_timestep_to = 0
+            else:
+                denoised_timestep_to = 1000 - torch.argmin((timesteps - block0_steps[block0_exit_idx + 1]).abs(), dim=0).item()
+            sim_step = block0_exit_idx + 1
 
         if return_sim_step:
-            return output, denoised_timestep_from, denoised_timestep_to, exit_flags[0] + 1
+            return output, denoised_timestep_from, denoised_timestep_to, sim_step
 
         return output, denoised_timestep_from, denoised_timestep_to
 

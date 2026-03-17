@@ -519,7 +519,7 @@ class WanVAE_(nn.Module):
         # cache
         t = x.shape[2]
         iter_ = 1 + (t - 1) // 4
-        # Split encode input x over time as 1, 4, 4, 4, ...
+        # 对encode输入的x，按时间拆分为1、4、4、4....
         for i in range(iter_):
             self._enc_conv_idx = [0]
             if i == 0:

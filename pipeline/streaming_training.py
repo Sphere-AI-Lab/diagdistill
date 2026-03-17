@@ -38,7 +38,6 @@ class StreamingTrainingPipeline:
         self.frame_seq_length = 1560
         self.num_frame_per_block = num_frame_per_block
         self.context_noise = context_noise
-        self.use_dia_forcing = bool(kwargs.get("use_dia_forcing", False))
 
         self.kv_cache1 = None
         self.crossattn_cache = None
@@ -210,40 +209,23 @@ class StreamingTrainingPipeline:
             # Record output
             output[:, local_start_frame:local_start_frame + current_num_frames] = denoised_pred
             
-            # Update cache according to training dia-forcing toggle.
-            if self.use_dia_forcing:
-                # Match inference-style cache refresh: direct denoised prediction, skip last block.
-                if block_index != len(all_num_frames) - 1:
-                    context_timestep = torch.ones_like(timestep) * self.context_noise
-                    if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
-                        print(f"[SeqTrain-Pipeline] Dia forcing cache update with context_noise={self.context_noise}")
-                    with torch.no_grad():
-                        self.generator(
-                            noisy_image_or_video=denoised_pred,
-                            conditional_dict=conditional_dict,
-                            timestep=context_timestep,
-                            kv_cache=self.kv_cache1,
-                            crossattn_cache=self.crossattn_cache,
-                            current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                        )
-            else:
-                context_timestep = torch.ones_like(timestep) * self.context_noise
-                context_noisy = self.scheduler.add_noise(
-                    denoised_pred.flatten(0, 1),
-                    torch.randn_like(denoised_pred.flatten(0, 1)),
-                    context_timestep.flatten(0, 1),
-                ).unflatten(0, denoised_pred.shape[:2])
-                if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
-                    print(f"[SeqTrain-Pipeline] Updating cache with context_noise={self.context_noise}")
-                with torch.no_grad():
-                    self.generator(
-                        noisy_image_or_video=context_noisy,
-                        conditional_dict=conditional_dict,
-                        timestep=context_timestep,
-                        kv_cache=self.kv_cache1,
-                        crossattn_cache=self.crossattn_cache,
-                        current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                    )
+            context_timestep = torch.ones_like(timestep) * self.context_noise
+            context_noisy = self.scheduler.add_noise(
+                denoised_pred.flatten(0, 1),
+                torch.randn_like(denoised_pred.flatten(0, 1)),
+                context_timestep.flatten(0, 1),
+            ).unflatten(0, denoised_pred.shape[:2])
+            if DEBUG and block_index == 0 and (not dist.is_initialized() or dist.get_rank() == 0):
+                print(f"[SeqTrain-Pipeline] Updating cache with context_noise={self.context_noise}")
+            with torch.no_grad():
+                self.generator(
+                    noisy_image_or_video=context_noisy,
+                    conditional_dict=conditional_dict,
+                    timestep=context_timestep,
+                    kv_cache=self.kv_cache1,
+                    crossattn_cache=self.crossattn_cache,
+                    current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
+                )
             
             local_start_frame += current_num_frames
         

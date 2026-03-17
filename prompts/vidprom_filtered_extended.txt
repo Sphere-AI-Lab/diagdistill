@@ -1,0 +1,1 @@
+/gpfs/users/liujinxiu/research/diffusionlanguagemodel/LongLive-1.3B/prompts/vidprom_filtered_extended.txt

@@ -4,8 +4,10 @@ import torch.nn.functional as F
 from typing import Optional, Tuple
 import torch
 import time
+import copy
 
 from model.base import SelfForcingModel
+from model.spatial_head import SpatialHead
 from utils.memory import log_gpu_memory
 import torch.distributed as dist
 from utils.debug_option import DEBUG, LOG_GPU_MEMORY
@@ -56,6 +58,104 @@ class DMD(SelfForcingModel):
             self.scheduler.alphas_cumprod = self.scheduler.alphas_cumprod.to(device)
         else:
             self.scheduler.alphas_cumprod = None
+
+        # Optional motion feature regression branch: latent diff -> SpatialHead.
+        self.use_flow_reg_loss = getattr(args, "use_flow_reg_loss", False)
+        self.flow_reg_ema_decay = float(getattr(args, "flow_reg_ema_decay", 0.95))
+        self.motion_head_hidden_dim = int(getattr(args, "motion_head_hidden_dim", 64))
+        self.motion_head_num_layers = int(getattr(args, "motion_head_num_layers", 2))
+        self.motion_head_kernel_size = int(getattr(args, "motion_head_kernel_size", 1))
+        self.lambda_spatial_dmd = float(getattr(args, "lambda_spatial_dmd", 1.0))
+        self.lambda_flow_dmd = float(getattr(args, "lambda_flow_dmd", 1.0))
+        self.gamma_temporal = float(getattr(args, "gamma_temporal", 1.0))
+        self.lambda_reg = float(getattr(args, "lambda_reg", 0.0))
+        self.reg_loss_type = str(getattr(args, "reg_loss_type", "mse")).lower()
+        self.reg_loss_eps = float(getattr(args, "reg_loss_eps", 1e-3))
+        self.reg_loss_cauchy_c = float(getattr(args, "reg_loss_cauchy_c", 1e-2))
+        self.use_teacher_4step_regression = bool(getattr(args, "use_teacher_4step_regression", False))
+        self.teacher_4step_list = list(getattr(args, "teacher_4step_list", [1000, 750, 500, 250]))
+
+        valid_reg_loss_types = {"mse", "charbonnier", "cauchy"}
+        if self.reg_loss_type not in valid_reg_loss_types:
+            raise ValueError(
+                f"Invalid reg_loss_type '{self.reg_loss_type}'. "
+                f"Supported: {sorted(valid_reg_loss_types)}"
+            )
+
+        self.motion_head_student = None
+        self.motion_head_teacher = None
+        self.regression_teacher_generator = None
+        if self.use_flow_reg_loss:
+            num_channels = getattr(args, "image_or_video_shape", [1, 1, 16, 60, 104])[2]
+            self.motion_head_student = SpatialHead(
+                num_channels=num_channels,
+                num_layers=self.motion_head_num_layers,
+                kernel_size=self.motion_head_kernel_size,
+                hidden_dim=self.motion_head_hidden_dim,
+            ).to(device=device, dtype=self.dtype)
+            self.motion_head_teacher = SpatialHead(
+                num_channels=num_channels,
+                num_layers=self.motion_head_num_layers,
+                kernel_size=self.motion_head_kernel_size,
+                hidden_dim=self.motion_head_hidden_dim,
+            ).to(device=device, dtype=self.dtype)
+            self.motion_head_teacher.load_state_dict(self.motion_head_student.state_dict())
+            self.motion_head_teacher.requires_grad_(False)
+
+    @torch.no_grad()
+    def freeze_regression_teacher_from_generator(self):
+        if not self.use_teacher_4step_regression:
+            return
+        if self.regression_teacher_generator is not None:
+            return
+        self.regression_teacher_generator = copy.deepcopy(self.generator)
+        # Keep the frozen teacher fully on the current rank device to avoid cpu/cuda mismatches in rollout.
+        self.regression_teacher_generator = self.regression_teacher_generator.to(self.device)
+        self.regression_teacher_generator.requires_grad_(False)
+        self.regression_teacher_generator.eval()
+
+    def _resolve_step_list(self, step_list):
+        steps = torch.tensor(step_list, dtype=torch.long)
+        if getattr(self.args, "warp_denoising_step", False):
+            timesteps = torch.cat(
+                (self.scheduler.timesteps.cpu(), torch.tensor([0], dtype=torch.float32))
+            )
+            steps = timesteps[1000 - steps]
+        return steps.to(self.device)
+
+    def _run_generator_with_fixed_teacher_steps(
+        self,
+        image_or_video_shape,
+        conditional_dict: dict,
+        initial_latent: torch.Tensor = None,
+        slice_last_frames: int = 21,
+    ):
+        teacher_generator = self.regression_teacher_generator
+        if teacher_generator is None:
+            teacher_generator = self.generator
+
+        original_generator = self.generator
+        original_pipeline = self.inference_pipeline
+        original_steps = self.denoising_step_list
+        original_last_step_only = getattr(self.args, "last_step_only", False)
+        try:
+            self.generator = teacher_generator
+            # Teacher regression target should always come from the final step
+            # of the fixed 4-step trajectory instead of a randomly early-exited step.
+            self.args.last_step_only = True
+            self.inference_pipeline = None
+            self.denoising_step_list = self._resolve_step_list(self.teacher_4step_list)
+            return self._run_generator(
+                image_or_video_shape=image_or_video_shape,
+                conditional_dict=conditional_dict,
+                initial_latent=initial_latent,
+                slice_last_frames=slice_last_frames,
+            )
+        finally:
+            self.generator = original_generator
+            self.inference_pipeline = original_pipeline
+            self.denoising_step_list = original_steps
+            self.args.last_step_only = original_last_step_only
 
     def _compute_kl_grad(
         self, noisy_image_or_video: torch.Tensor,
@@ -125,7 +225,7 @@ class DMD(SelfForcingModel):
                 (pred_real_image[:, 1:] - pred_real_image[:, :-1])
             )
         else:
-            grad_motion = torch.zeros_like(grad)
+            grad_motion = grad[:, :0]
 
         # TODO: Change the normalizer for causal teacher
         if normalization:
@@ -155,6 +255,7 @@ class DMD(SelfForcingModel):
         conditional_dict: dict,
         unconditional_dict: dict,
         gradient_mask: Optional[torch.Tensor] = None,
+        regression_target: Optional[torch.Tensor] = None,
         denoised_timestep_from: int = 0,
         denoised_timestep_to: int = 0
     ) -> Tuple[torch.Tensor, dict]:
@@ -210,6 +311,9 @@ class DMD(SelfForcingModel):
             )
 
         original_target = (original_latent.double() - grad.double()).detach()
+        regression_target_for_reg = original_target
+        if regression_target is not None:
+            regression_target_for_reg = regression_target.to(dtype=torch.double).detach()
         if gradient_mask is not None:
             dmd_original_loss = 0.5 * F.mse_loss(
                 original_latent.double()[gradient_mask],
@@ -223,10 +327,10 @@ class DMD(SelfForcingModel):
                 reduction="mean",
             )
 
-        # Motion loss branch (time-difference weighted energy of motion gradient).
+        # Motion loss branch: mirror the original DMD target construction.
         if grad_motion.shape[1] > 0:
             def dynamic_frame_weights(pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-                per_frame_loss = F.mse_loss(pred, target, reduction="none").mean(dim=[2, 3, 4])  # [B, F-1]
+                per_frame_loss = F.mse_loss(pred, target, reduction="none").mean(dim=[2, 3, 4])
                 cum_error = torch.cumsum(per_frame_loss, dim=1)
                 denom = cum_error[:, -1:].clamp_min(1e-6)
                 return (1.0 + cum_error / denom).detach()
@@ -242,7 +346,9 @@ class DMD(SelfForcingModel):
             exp_weights = exponential_weights(grad_motion.shape[1]).view(1, -1).expand_as(dyn_weights)
             hybrid_weights = 0.7 * dyn_weights + 0.3 * exp_weights
 
-            squared_error = grad_motion.double() ** 2
+            pred_motion = (original_latent[:, 1:] - original_latent[:, :-1]).double()
+            target_motion = (pred_motion - grad_motion.double()).detach()
+            squared_error = (pred_motion - target_motion) ** 2
             weighted_squared_error = squared_error * hybrid_weights.view(
                 hybrid_weights.shape[0], hybrid_weights.shape[1], 1, 1, 1
             ).double()
@@ -253,16 +359,106 @@ class DMD(SelfForcingModel):
         use_motion_loss = getattr(
             self.args, "use_motion_loss", getattr(self.args, "use_dmd_loss", True)
         )
-        if use_motion_loss:
-            dmd_loss = dmd_original_loss + 0.2 * dmd_motion_loss
-        else:
-            dmd_loss = dmd_original_loss + 0 * dmd_motion_loss
+        flow_dmd_term = dmd_motion_loss if use_motion_loss else dmd_original_loss * 0.0
+
+        flow_reg_loss = dmd_original_loss * 0.0
+        if (
+            self.use_flow_reg_loss
+            and self.motion_head_student is not None
+            and self.motion_head_teacher is not None
+            and original_latent.shape[1] > 1
+        ):
+            delta_student = (original_latent[:, 1:] - original_latent[:, :-1]).to(self.dtype)
+            delta_teacher = (
+                regression_target_for_reg[:, 1:] - regression_target_for_reg[:, :-1]
+            ).to(self.dtype)
+            pred_motion_feature = self.motion_head_student(delta_student)
+            with torch.no_grad():
+                target_motion_feature = self.motion_head_teacher(delta_teacher)
+
+            if gradient_mask is not None:
+                pair_mask = gradient_mask[:, 1:] & gradient_mask[:, :-1]
+                if pair_mask.any():
+                    flow_reg_loss = F.mse_loss(
+                        pred_motion_feature[pair_mask],
+                        target_motion_feature[pair_mask],
+                        reduction="mean",
+                    )
+                else:
+                    flow_reg_loss = dmd_original_loss * 0.0
+            else:
+                flow_reg_loss = F.mse_loss(
+                    pred_motion_feature,
+                    target_motion_feature,
+                    reduction="mean",
+                )
+
+        # L_total = lambda_spatial * L_spatial_DMD + lambda_reg * L_reg
+        #           + gamma * (lambda_flow * L_flow_DMD + L_flow_reg)
+        reg_loss = self._compute_regression_loss(
+            prediction=original_latent.double(),
+            target=regression_target_for_reg,
+            gradient_mask=gradient_mask,
+        )
+
+        dmd_loss = (
+            self.lambda_spatial_dmd * dmd_original_loss
+            + self.lambda_reg * reg_loss
+            + self.gamma_temporal * (self.lambda_flow_dmd * flow_dmd_term + flow_reg_loss)
+        )
 
         dmd_log_dict.update({
             "dmd_motion_loss": dmd_motion_loss.detach(),
             "dmd_original_loss": dmd_original_loss.detach(),
+            "flow_reg_loss": flow_reg_loss.detach(),
+            "reg_loss": reg_loss.detach(),
+            "lambda_spatial_dmd": torch.tensor(self.lambda_spatial_dmd, device=dmd_original_loss.device),
+            "lambda_flow_dmd": torch.tensor(self.lambda_flow_dmd, device=dmd_original_loss.device),
+            "gamma_temporal": torch.tensor(self.gamma_temporal, device=dmd_original_loss.device),
+            "lambda_reg": torch.tensor(self.lambda_reg, device=dmd_original_loss.device),
+            "reg_loss_type_id": torch.tensor(
+                {"mse": 0, "charbonnier": 1, "cauchy": 2}[self.reg_loss_type],
+                device=dmd_original_loss.device,
+            ),
         })
         return dmd_loss, dmd_log_dict
+
+    def _compute_regression_loss(
+        self,
+        prediction: torch.Tensor,
+        target: torch.Tensor,
+        gradient_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        if gradient_mask is not None:
+            prediction = prediction[gradient_mask]
+            target = target[gradient_mask]
+
+        if self.reg_loss_type == "mse":
+            return F.mse_loss(prediction, target, reduction="mean")
+
+        diff = prediction - target
+        if self.reg_loss_type == "charbonnier":
+            eps = max(self.reg_loss_eps, 1e-12)
+            return torch.sqrt(diff * diff + eps * eps).mean()
+
+        c = max(self.reg_loss_cauchy_c, 1e-12)
+        return torch.log1p((diff / c) ** 2).mean()
+
+    @torch.no_grad()
+    def update_motion_head_teacher(self):
+        if (
+            not self.use_flow_reg_loss
+            or self.motion_head_student is None
+            or self.motion_head_teacher is None
+        ):
+            return
+
+        decay = self.flow_reg_ema_decay
+        for teacher_param, student_param in zip(
+            self.motion_head_teacher.parameters(),
+            self.motion_head_student.parameters(),
+        ):
+            teacher_param.data.mul_(decay).add_(student_param.data, alpha=1.0 - decay)
 
     def generator_loss(
         self,
@@ -291,6 +487,13 @@ class DMD(SelfForcingModel):
         # Step 1: Unroll generator to obtain fake videos
         slice_last_frames = getattr(self.args, "slice_last_frames", 21)
         _t_gen_start = time.time()
+        regression_target = None
+        rng_state_cpu = None
+        rng_state_cuda = None
+        if self.use_teacher_4step_regression:
+            rng_state_cpu = torch.get_rng_state()
+            if torch.cuda.is_available():
+                rng_state_cuda = torch.cuda.get_rng_state(self.device)
         if DEBUG and dist.get_rank() == 0:
             print(f"generator_rollout")
         pred_image, gradient_mask, denoised_timestep_from, denoised_timestep_to = self._run_generator(
@@ -299,6 +502,17 @@ class DMD(SelfForcingModel):
             initial_latent=initial_latent,
             slice_last_frames=slice_last_frames
         )
+        if self.use_teacher_4step_regression:
+            torch.set_rng_state(rng_state_cpu)
+            if torch.cuda.is_available() and rng_state_cuda is not None:
+                torch.cuda.set_rng_state(rng_state_cuda, self.device)
+            with torch.no_grad():
+                regression_target, _, _, _ = self._run_generator_with_fixed_teacher_steps(
+                    image_or_video_shape=image_or_video_shape,
+                    conditional_dict=conditional_dict,
+                    initial_latent=initial_latent,
+                    slice_last_frames=slice_last_frames,
+                )
         if dist.get_rank() == 0 and DEBUG:
             print(f"pred_image: {pred_image.shape}")
             if gradient_mask is not None:   
@@ -315,6 +529,7 @@ class DMD(SelfForcingModel):
             conditional_dict=conditional_dict,
             unconditional_dict=unconditional_dict,
             gradient_mask=gradient_mask,
+            regression_target=regression_target,
             denoised_timestep_from=denoised_timestep_from,
             denoised_timestep_to=denoised_timestep_to
         )

@@ -630,6 +630,11 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         self.independent_first_frame = False
 
     def _set_gradient_checkpointing(self, module=None, value=False, enable=None, gradient_checkpointing_func=None):
+        """
+        Adapter for diffusers' gradient checkpointing API.
+        Newer diffusers passes `enable` and `gradient_checkpointing_func`;
+        we only need a boolean flag to toggle our own checkpointing logic.
+        """
         if enable is not None:
             value = enable
         self.gradient_checkpointing = value
@@ -939,10 +944,15 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         if y is not None:
             x = [torch.cat([u, v], dim=0) for u, v in zip(x, y)]
         
-        # print(f"x.device: {x[0].device}, t.device: {t.device}, context.device: {context.device}, seq_len: {seq_len}")
-
-        # embeddings
-        x = [self.patch_embedding(u.unsqueeze(0)) for u in x]
+        # embeddings: keep module/device aligned with current runtime tensors.
+        run_device = x[0].device
+        if self.patch_embedding.weight.device != run_device:
+            # For teacher copies that may live on CPU, move patch_embedding onto the runtime device.
+            self.patch_embedding = self.patch_embedding.to(run_device)
+        t = t.to(device=run_device)
+        pe_weight = self.patch_embedding.weight
+        pe_dtype = pe_weight.dtype
+        x = [self.patch_embedding(u.unsqueeze(0).to(device=run_device, dtype=pe_dtype)) for u in x]
         # print("patch embedding done")
         grid_sizes = torch.stack(
             [torch.tensor(u.shape[2:], dtype=torch.long) for u in x])
@@ -957,24 +967,34 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         ])
         """
 
-        # time embeddings
+        # time embeddings: keep module/device aligned to runtime device to avoid cpu/cuda mismatches
+        time_param = next(self.time_embedding.parameters())
+        if time_param.device != run_device:
+            self.time_embedding = self.time_embedding.to(run_device)
+            self.time_projection = self.time_projection.to(run_device)
+            time_param = next(self.time_embedding.parameters())
+
         # with amp.autocast(dtype=torch.float32):
         e = self.time_embedding(
-            sinusoidal_embedding_1d(self.freq_dim, t.flatten()).type_as(x))
+            sinusoidal_embedding_1d(self.freq_dim, t.flatten()).to(device=time_param.device, dtype=time_param.dtype))
         e0 = self.time_projection(e).unflatten(
             1, (6, self.dim)).unflatten(dim=0, sizes=t.shape)
         # assert e.dtype == torch.float32 and e0.dtype == torch.float32
         # print("time embedding done")
         # context
         context_lens = None
+        te_param = next(self.text_embedding.parameters())
+        te_device, te_dtype = te_param.device, te_param.dtype
         context = self.text_embedding(
             torch.stack([
                 torch.cat(
                     [u, u.new_zeros(self.text_len - u.size(0), u.size(1))])
                 for u in context
-            ]))
+            ]).to(device=te_device, dtype=te_dtype))
         # print("text embedding done")
         if clip_fea is not None:
+            img_param = next(self.img_emb.parameters())
+            clip_fea = clip_fea.to(device=img_param.device, dtype=img_param.dtype)
             context_clip = self.img_emb(clip_fea)  # bs x 257 x dim
             context = torch.concat([context_clip, context], dim=1)
 
@@ -1123,8 +1143,15 @@ class CausalWanModel(ModelMixin, ConfigMixin):
         if y is not None:
             x = [torch.cat([u, v], dim=0) for u, v in zip(x, y)]
 
-        # embeddings
-        x = [self.patch_embedding(u.unsqueeze(0)) for u in x]
+        # embeddings: keep module/device aligned with current runtime tensors.
+        run_device = x[0].device
+        if self.patch_embedding.weight.device != run_device:
+            # For teacher copies that may live on CPU, move patch_embedding onto the runtime device.
+            self.patch_embedding = self.patch_embedding.to(run_device)
+        t = t.to(device=run_device)
+        pe_weight = self.patch_embedding.weight
+        pe_dtype = pe_weight.dtype
+        x = [self.patch_embedding(u.unsqueeze(0).to(device=run_device, dtype=pe_dtype)) for u in x]
 
         grid_sizes = torch.stack(
             [torch.tensor(u.shape[2:], dtype=torch.long) for u in x])
@@ -1137,29 +1164,39 @@ class CausalWanModel(ModelMixin, ConfigMixin):
                       dim=1) for u in x
         ])
 
-        # time embeddings
+        # time embeddings: keep module/device aligned to runtime device to avoid cpu/cuda mismatches
+        time_param = next(self.time_embedding.parameters())
+        if time_param.device != run_device:
+            self.time_embedding = self.time_embedding.to(run_device)
+            self.time_projection = self.time_projection.to(run_device)
+            time_param = next(self.time_embedding.parameters())
+
         # with amp.autocast(dtype=torch.float32):
         e = self.time_embedding(
-            sinusoidal_embedding_1d(self.freq_dim, t.flatten()).type_as(x))
+            sinusoidal_embedding_1d(self.freq_dim, t.flatten()).to(device=time_param.device, dtype=time_param.dtype))
         e0 = self.time_projection(e).unflatten(
             1, (6, self.dim)).unflatten(dim=0, sizes=t.shape)
         # assert e.dtype == torch.float32 and e0.dtype == torch.float32
 
         # context
         context_lens = None
+        te_param = next(self.text_embedding.parameters())
+        te_device, te_dtype = te_param.device, te_param.dtype
         context = self.text_embedding(
             torch.stack([
                 torch.cat(
                     [u, u.new_zeros(self.text_len - u.size(0), u.size(1))])
                 for u in context
-            ]))
+            ]).to(device=te_device, dtype=te_dtype))
 
         if clip_fea is not None:
+            img_param = next(self.img_emb.parameters())
+            clip_fea = clip_fea.to(device=img_param.device, dtype=img_param.dtype)
             context_clip = self.img_emb(clip_fea)  # bs x 257 x dim
             context = torch.concat([context_clip, context], dim=1)
 
         if clean_x is not None:
-            clean_x = [self.patch_embedding(u.unsqueeze(0)) for u in clean_x]
+            clean_x = [self.patch_embedding(u.unsqueeze(0).to(device=run_device, dtype=pe_dtype)) for u in clean_x]
             clean_x = [u.flatten(2).transpose(1, 2) for u in clean_x]
 
             seq_lens_clean = torch.tensor([u.size(1) for u in clean_x], dtype=torch.long)
@@ -1171,6 +1208,7 @@ class CausalWanModel(ModelMixin, ConfigMixin):
             x = torch.cat([clean_x, x], dim=1)
             if aug_t is None:
                 aug_t = torch.zeros_like(t)
+            aug_t = aug_t.to(device=run_device)
             e_clean = self.time_embedding(
                 sinusoidal_embedding_1d(self.freq_dim, aug_t.flatten()).type_as(x))
             e0_clean = self.time_projection(e_clean).unflatten(

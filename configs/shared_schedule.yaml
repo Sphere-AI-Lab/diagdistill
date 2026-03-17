@@ -1,0 +1,8 @@
+denoising_step_list:
+- 1000
+- 100
+warp_denoising_step: true
+use_diagonal_denoising: true
+warmup_mid_steps_raw:
+- 750
+- 500

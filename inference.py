@@ -4,7 +4,6 @@ import argparse
 import torch
 import os
 import re
-import urllib.request
 from datetime import datetime
 import time
 from omegaconf import OmegaConf
@@ -29,6 +28,11 @@ parser.add_argument("--config_path", type=str, help="Path to the config file")
 args = parser.parse_args()
 
 config = OmegaConf.load(args.config_path)
+schedule_path = config.get("schedule_config_path", "")
+if schedule_path:
+    shared_schedule = OmegaConf.load(schedule_path)
+    # Schedule is the single source of truth for train/infer denoising settings.
+    config = OmegaConf.merge(config, shared_schedule)
 
 # Initialize distributed inference
 if "LOCAL_RANK" in os.environ:
@@ -76,11 +80,24 @@ def initialize_vae_decoder(use_taehv: bool, taehv_checkpoint_path: str, device: 
     from taehv import TAEHV
 
     if not os.path.exists(taehv_checkpoint_path):
-        print(f"taew2_1.pth not found at {taehv_checkpoint_path}. Downloading...")
-        os.makedirs(os.path.dirname(taehv_checkpoint_path), exist_ok=True)
-        download_url = "https://github.com/madebyollin/taehv/raw/main/taew2_1.pth"
-        urllib.request.urlretrieve(download_url, taehv_checkpoint_path)
-        print(f"Downloaded TAEHV checkpoint to {taehv_checkpoint_path}")
+        fallback_candidates = [
+            "taew2_1.pth",
+            "checkpoints/taew2_1.pth",
+        ]
+        resolved = None
+        for candidate in fallback_candidates:
+            if os.path.exists(candidate):
+                resolved = candidate
+                break
+        if resolved is None:
+            raise FileNotFoundError(
+                f"TAEHV checkpoint not found at {taehv_checkpoint_path}. "
+                "Please provide taew2_1.pth from "
+                "local workspace (e.g., project root or checkpoints/)."
+            )
+        if dist.get_rank() == 0 if dist.is_initialized() else True:
+            print(f"Using fallback TAEHV checkpoint: {resolved}")
+        taehv_checkpoint_path = resolved
 
     class TinyVAEWrapper(torch.nn.Module):
         def __init__(self, checkpoint_path: str):
@@ -163,6 +180,24 @@ if getattr(config, "adapter", None) and configure_lora_for_model is not None:
 
     pipeline.is_lora_enabled = True
 
+if (
+    pipeline.is_lora_enabled
+    and bool(getattr(config, "enable_torch_compile", False))
+    and bool(getattr(config, "merge_lora_before_compile", True))
+):
+    if local_rank == 0:
+        print("Merging LoRA adapters into base model before torch.compile")
+    if not hasattr(pipeline.generator.model, "merge_and_unload"):
+        raise RuntimeError(
+            "LoRA model does not support merge_and_unload, cannot proceed with strict torch.compile mode."
+        )
+    pipeline.generator.model = pipeline.generator.model.merge_and_unload(
+        progressbar=False,
+        safe_merge=True,
+    )
+    if local_rank == 0:
+        print("LoRA merge completed")
+
 
 # Move pipeline to appropriate dtype and device
 pipeline = pipeline.to(dtype=torch.bfloat16)
@@ -181,13 +216,23 @@ if use_taehv:
 # Optional torch.compile for inference (config-controlled)
 if bool(getattr(config, "enable_torch_compile", False)):
     compile_mode = str(getattr(config, "torch_compile_mode", "max-autotune-no-cudagraphs"))
+    suppress_compile_errors = bool(getattr(config, "torch_compile_suppress_errors", True))
+    require_compile_success = bool(getattr(config, "torch_compile_require_success", True))
+    if suppress_compile_errors:
+        torch._dynamo.config.suppress_errors = True
     if local_rank == 0:
-        print(f"Enabling torch.compile with mode={compile_mode}")
+        print(
+            f"Enabling torch.compile with mode={compile_mode}, "
+            f"suppress_errors={suppress_compile_errors}, "
+            f"require_success={require_compile_success}"
+        )
     try:
         compiled_gen = torch.compile(pipeline.generator, mode=compile_mode)
         if compiled_gen is not None:
             pipeline.generator = compiled_gen
     except Exception as e:
+        if require_compile_success:
+            raise RuntimeError(f"torch.compile failed for generator in strict mode: {e}") from e
         if local_rank == 0:
             print(f"[Warning] torch.compile failed for generator: {e}")
     try:
@@ -195,6 +240,8 @@ if bool(getattr(config, "enable_torch_compile", False)):
         if compiled_vae is not None:
             pipeline.vae = compiled_vae
     except Exception as e:
+        if require_compile_success:
+            raise RuntimeError(f"torch.compile failed for VAE in strict mode: {e}") from e
         if local_rank == 0:
             print(f"[Warning] torch.compile failed for VAE: {e}")
 
@@ -304,8 +351,9 @@ for i, batch_data in tqdm(enumerate(dataloader), disable=(local_rank != 0)):
     all_video.append(current_video)
     num_generated_frames += latents.shape[1]
 
-    # Final output video
-    video = 255.0 * torch.cat(all_video, dim=1)
+    # Final output video: use explicit uint8 quantization to avoid backend-dependent
+    # float-to-video conversion artifacts (e.g., first-frame brightness flicker).
+    video = (torch.cat(all_video, dim=1).clamp(0, 1) * 255.0).round().to(torch.uint8)
 
     # Clear VAE cache when available (WanVAEWrapper has model.clear_cache; TAEHV wrapper does not).
     if hasattr(pipeline.vae, "model") and hasattr(pipeline.vae.model, "clear_cache"):

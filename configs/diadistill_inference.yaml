@@ -1,17 +1,19 @@
-# denoising_step_list:
-# - 1000
-# - 750
-# - 500
-# - 250
+schedule_config_path: configs/shared_schedule.yaml
 denoising_step_list:
 - 1000
 - 100
 warp_denoising_step: true # need to remove - 0 in denoising_step_list if warp_denoising_step is true
 use_diagonal_denoising: true
+warmup_mid_steps_raw:
+- 750
+- 500
 enable_torch_compile: true
 torch_compile_mode: max-autotune-no-cudagraphs
+torch_compile_suppress_errors: false
+torch_compile_require_success: true
+merge_lora_before_compile: true
 use_taehv: true
-taehv_checkpoint_path: checkpoints/taew2_1.pth
+taehv_checkpoint_path: taew2_1.pth
 num_frame_per_block: 3
 model_name: Wan2.1-T2V-1.3B
 model_kwargs:
@@ -21,7 +23,7 @@ model_kwargs:
 
 
 # inference
-data_path: diadistill_models/prompts/vidprom_filtered_extended.txt
+data_path: prompts/prompts_10.txt
 output_folder: videos/long
 inference_iter: -1
 num_output_frames: 21
@@ -32,7 +34,7 @@ save_with_index: true
 global_sink: true
 context_noise: 0
 
-generator_ckpt: longlive_models/models/longlive_base.pt
+generator_ckpt: outputs/20260315_212642/checkpoint_model_003500/model.pt
 lora_ckpt: longlive_models/models/lora.pt
 
 adapter:

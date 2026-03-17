@@ -4,6 +4,14 @@ denoising_step_list:
 - 500
 - 250
 warp_denoising_step: true # need to remove - 0 in denoising_step_list if warp_denoising_step is true
+use_diagonal_denoising: true
+enable_torch_compile: true
+torch_compile_mode: max-autotune-no-cudagraphs
+torch_compile_suppress_errors: false
+torch_compile_require_success: true
+merge_lora_before_compile: true
+use_taehv: true
+taehv_checkpoint_path: taew2_1.pth
 num_frame_per_block: 3
 model_name: Wan2.1-T2V-1.3B
 model_kwargs:
@@ -13,7 +21,7 @@ model_kwargs:
   use_infinite_attention: true
 
 # inference
-data_path: diadistill_models/prompts/vidprom_filtered_extended.txt
+data_path: longlive_models/prompts/vidprom_filtered_extended.txt
 output_folder: videos/long_infinity
 inference_iter: -1
 num_output_frames: 1050
@@ -24,8 +32,8 @@ save_with_index: true
 global_sink: true
 context_noise: 0
 
-generator_ckpt: diadistill_models/models/diadistill_base.pt
-lora_ckpt: diadistill_models/models/lora.pt
+generator_ckpt: longlive_models/models/longlive_base.pt
+lora_ckpt: longlive_models/models/lora.pt
 
 adapter:
   type: "lora"

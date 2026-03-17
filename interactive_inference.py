@@ -31,6 +31,46 @@ from pipeline.interactive_causal_inference import (
 from utils.dataset import MultiTextDataset
 
 
+def initialize_vae_decoder(use_taehv: bool, taehv_checkpoint_path: str, device: torch.device):
+    if not use_taehv:
+        return None
+
+    from taehv import TAEHV
+
+    if not os.path.exists(taehv_checkpoint_path):
+        fallback_candidates = [
+            "taew2_1.pth",
+            "checkpoints/taew2_1.pth",
+        ]
+        resolved = None
+        for candidate in fallback_candidates:
+            if os.path.exists(candidate):
+                resolved = candidate
+                break
+        if resolved is None:
+            raise FileNotFoundError(
+                f"TAEHV checkpoint not found at {taehv_checkpoint_path}. "
+                "Please provide taew2_1.pth from "
+                "local workspace (e.g., project root or checkpoints/)."
+            )
+        taehv_checkpoint_path = resolved
+
+    class TinyVAEWrapper(torch.nn.Module):
+        def __init__(self, checkpoint_path: str):
+            super().__init__()
+            self.taehv = TAEHV(checkpoint_path=checkpoint_path).to(torch.float16)
+
+        def decode_to_pixel(self, latent: torch.Tensor, use_cache: bool = False) -> torch.Tensor:
+            del use_cache
+            latents_fp16 = latent.to(dtype=torch.float16)
+            return self.taehv.decode_video(latents_fp16, parallel=False).mul_(2).sub_(1)
+
+    tiny_vae = TinyVAEWrapper(taehv_checkpoint_path).eval().requires_grad_(False)
+    tiny_vae.to(device)
+    print("TAEHV tiny decoder enabled for interactive inference")
+    return tiny_vae
+
+
 # ----------------------------- Argument parsing -----------------------------
 parser = argparse.ArgumentParser("Interactive causal inference")
 parser.add_argument("--config_path", type=str, help="Path to the config file")
@@ -132,6 +172,24 @@ if getattr(config, "adapter", None) and configure_lora_for_model is not None:
 
     pipeline.is_lora_enabled = True
 
+if (
+    pipeline.is_lora_enabled
+    and bool(getattr(config, "enable_torch_compile", False))
+    and bool(getattr(config, "merge_lora_before_compile", True))
+):
+    if local_rank == 0:
+        print("Merging LoRA adapters into base model before torch.compile")
+    if not hasattr(pipeline.generator.model, "merge_and_unload"):
+        raise RuntimeError(
+            "LoRA model does not support merge_and_unload, cannot proceed with strict torch.compile mode."
+        )
+    pipeline.generator.model = pipeline.generator.model.merge_and_unload(
+        progressbar=False,
+        safe_merge=True,
+    )
+    if local_rank == 0:
+        print("LoRA merge completed")
+
 # Move pipeline to appropriate dtype and device
 print("dtype", pipeline.generator.model.dtype)
 pipeline = pipeline.to(dtype=torch.bfloat16)
@@ -139,6 +197,45 @@ if low_memory:
     DynamicSwapInstaller.install_model(pipeline.text_encoder, device=device)
 pipeline.generator.to(device=device)
 pipeline.vae.to(device=device)
+
+use_taehv = bool(getattr(config, "use_taehv", False))
+taehv_checkpoint_path = str(getattr(config, "taehv_checkpoint_path", "checkpoints/taew2_1.pth"))
+if use_taehv:
+    tiny_vae = initialize_vae_decoder(use_taehv=True, taehv_checkpoint_path=taehv_checkpoint_path, device=device)
+    if tiny_vae is not None:
+        pipeline.vae = tiny_vae
+
+# Optional torch.compile for inference (config-controlled)
+if bool(getattr(config, "enable_torch_compile", False)):
+    compile_mode = str(getattr(config, "torch_compile_mode", "max-autotune-no-cudagraphs"))
+    suppress_compile_errors = bool(getattr(config, "torch_compile_suppress_errors", True))
+    require_compile_success = bool(getattr(config, "torch_compile_require_success", True))
+    if suppress_compile_errors:
+        torch._dynamo.config.suppress_errors = True
+    if local_rank == 0:
+        print(
+            f"Enabling torch.compile with mode={compile_mode}, "
+            f"suppress_errors={suppress_compile_errors}, "
+            f"require_success={require_compile_success}"
+        )
+    try:
+        compiled_gen = torch.compile(pipeline.generator, mode=compile_mode)
+        if compiled_gen is not None:
+            pipeline.generator = compiled_gen
+    except Exception as e:
+        if require_compile_success:
+            raise RuntimeError(f"torch.compile failed for generator in strict mode: {e}") from e
+        if local_rank == 0:
+            print(f"[Warning] torch.compile failed for generator: {e}")
+    try:
+        compiled_vae = torch.compile(pipeline.vae, mode=compile_mode)
+        if compiled_vae is not None:
+            pipeline.vae = compiled_vae
+    except Exception as e:
+        if require_compile_success:
+            raise RuntimeError(f"torch.compile failed for VAE in strict mode: {e}") from e
+        if local_rank == 0:
+            print(f"[Warning] torch.compile failed for VAE: {e}")
 
 # ----------------------------- Build dataset -----------------------------
 # Parse switch_frame_indices

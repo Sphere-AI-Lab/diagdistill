@@ -1,5 +1,6 @@
 # Adopted from https://github.com/guandeh17/Self-Forcing
 # SPDX-License-Identifier: Apache-2.0
+import os
 import types
 from typing import List, Optional
 import torch
@@ -13,6 +14,12 @@ from wan.modules.t5 import umt5_xxl
 from wan.modules.causal_model import CausalWanModel
 from wan.modules.causal_model_infinity import CausalWanModel as CausalWanModelInfinity
 
+WAN_MODEL_ROOT = os.environ.get(
+    "WAN_MODEL_ROOT",
+    "models",
+)
+WAN_DEFAULT_MODEL_DIR = os.path.join(WAN_MODEL_ROOT, "Wan2.1-T2V-1.3B")
+
 class WanTextEncoder(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -24,7 +31,7 @@ class WanTextEncoder(torch.nn.Module):
             device=torch.device('cpu')
         ).eval().requires_grad_(False)
         self.text_encoder.load_state_dict(
-            torch.load("wan_models/Wan2.1-T2V-1.3B/models_t5_umt5-xxl-enc-bf16.pth",
+            torch.load(os.path.join(WAN_DEFAULT_MODEL_DIR, "models_t5_umt5-xxl-enc-bf16.pth"),
                        map_location='cpu', weights_only=False)
         )
         
@@ -33,7 +40,10 @@ class WanTextEncoder(torch.nn.Module):
             self.text_encoder = self.text_encoder.cuda()
 
         self.tokenizer = HuggingfaceTokenizer(
-            name="wan_models/Wan2.1-T2V-1.3B/google/umt5-xxl/", seq_len=512, clean='whitespace')
+            name=os.path.join(WAN_DEFAULT_MODEL_DIR, "google/umt5-xxl/"),
+            seq_len=512,
+            clean='whitespace',
+        )
 
     @property
     def device(self):
@@ -73,7 +83,7 @@ class WanVAEWrapper(torch.nn.Module):
 
         # init model
         self.model = _video_vae(
-            pretrained_path="wan_models/Wan2.1-T2V-1.3B/Wan2.1_VAE.pth",
+            pretrained_path=os.path.join(WAN_DEFAULT_MODEL_DIR, "Wan2.1_VAE.pth"),
             z_dim=16,
         ).eval().requires_grad_(False)
 
@@ -180,15 +190,21 @@ class WanDiffusionWrapper(torch.nn.Module):
     ):
         super().__init__()
 
+        # Resolve pretrained path: absolute/explicit dir or under WAN_MODEL_ROOT.
+        if os.path.isabs(model_name) or os.path.isdir(model_name):
+            base_path = model_name
+        else:
+            base_path = os.path.join(WAN_MODEL_ROOT, model_name)
+
         if is_causal:
             if use_infinite_attention:
                 self.model = CausalWanModelInfinity.from_pretrained(
-                    f"wan_models/{model_name}/", local_attn_size=local_attn_size, sink_size=sink_size)
+                    base_path, local_attn_size=local_attn_size, sink_size=sink_size)
             else:
                 self.model = CausalWanModel.from_pretrained(
-                    f"wan_models/{model_name}/", local_attn_size=local_attn_size, sink_size=sink_size)
+                    base_path, local_attn_size=local_attn_size, sink_size=sink_size)
         else:
-            self.model = WanModel.from_pretrained(f"wan_models/{model_name}/")
+            self.model = WanModel.from_pretrained(base_path)
         self.model.eval()
 
         # For non-causal diffusion, all frames share the same timestep

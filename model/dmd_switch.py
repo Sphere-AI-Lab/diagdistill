@@ -27,8 +27,6 @@ class DMDSwitch(DMD):
             same_step_across_blocks=self.args.same_step_across_blocks,
             last_step_only=self.args.last_step_only,
             context_noise=self.args.context_noise,
-            use_dia_forcing=getattr(self.args, "use_dia_forcing", False),
             local_attn_size=getattr(self.args, "model_kwargs", {}).get("local_attn_size", -1),
             slice_last_frames=getattr(self.args, "slice_last_frames", 21),
-            global_sink=getattr(self.args, "global_sink", False),
         )

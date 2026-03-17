@@ -45,7 +45,6 @@ try:
     from torch.utils.tensorboard import SummaryWriter
 except ImportError:
     SummaryWriter = None
-import time
 
 class Trainer:
     
@@ -102,6 +101,7 @@ class Trainer:
             else:
                 print("Warning: TensorBoard is unavailable (torch.utils.tensorboard not installed).")
         app_start_time = time.time_ns() / 1_000_000 
+        
         # ------------------------------------- One Logger Setup ----------------------------------------------
         if self.use_one_logger and OneLoggerUtils is not None and dist.get_rank() == 0 and not self.disable_wandb:
             app_tag_run_name = f"dmd_{config.real_name[:6]}_local_attn_size_{config.model_kwargs.local_attn_size}_lr_{config.lr}"
@@ -134,7 +134,7 @@ class Trainer:
                 "save_checkpoint_strategy": "sync",
             }
             self.one_logger = OneLoggerUtils(one_logger_config)
-            self.one_logger.on_app_start(app_start_time=app_start_time)
+            self.one_logger.on_app_start(app_start_time = app_start_time)  
         else:
             self.one_logger = None
             if self.use_one_logger and self.is_main_process and OneLoggerUtils is None:
@@ -314,6 +314,9 @@ class Trainer:
             else:
                 if self.is_main_process:
                     print("No LoRA checkpoint to load, starting from scratch")
+
+        if hasattr(self.model, "freeze_regression_teacher_from_generator"):
+            self.model.freeze_regression_teacher_from_generator()
 
         self.model.generator = fsdp_wrap(
             self.model.generator,
@@ -534,9 +537,10 @@ class Trainer:
                     if self.is_main_process:
                         print("Warning: EMA checkpoint not found or EMA not initialized.")
                 
-                # For auto resume, always resume full training state
-                # Load optimizers
-                if "generator_optimizer" in checkpoint:
+                # For auto resume, always resume full training state when optimizer states exist.
+                # Some older checkpoints do not contain valid optimizer state dicts (or store them as None);
+                # in that case we skip loading and start optimizers fresh.
+                if "generator_optimizer" in checkpoint and checkpoint["generator_optimizer"] is not None:
                     if self.is_main_process:
                         print("Resuming generator optimizer...")
                     gen_osd = FSDP.optim_state_dict_to_load(
@@ -547,9 +551,9 @@ class Trainer:
                     self.generator_optimizer.load_state_dict(gen_osd)
                 else:
                     if self.is_main_process:
-                        print("Warning: Generator optimizer checkpoint not found.")
+                        print("Warning: Generator optimizer checkpoint not found or is None; starting generator optimizer from scratch.")
                 
-                if "critic_optimizer" in checkpoint:
+                if "critic_optimizer" in checkpoint and checkpoint["critic_optimizer"] is not None:
                     if self.is_main_process:
                         print("Resuming critic optimizer...")
                     crit_osd = FSDP.optim_state_dict_to_load(
@@ -560,7 +564,7 @@ class Trainer:
                     self.critic_optimizer.load_state_dict(crit_osd)
                 else:
                     if self.is_main_process:
-                        print("Warning: Critic optimizer checkpoint not found.")
+                        print("Warning: Critic optimizer checkpoint not found or is None; starting critic optimizer from scratch.")
                 
                 # Load training step
                 if "step" in checkpoint:
@@ -774,32 +778,25 @@ class Trainer:
                 "step": self.step,
             }
         else:
-            save_optimizer_state = getattr(self.config, "save_optimizer_state", False)
             with FSDP.state_dict_type(
                 self.model.generator,
                 StateDictType.FULL_STATE_DICT,
                 FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
-                FullOptimStateDictConfig(rank0_only=True),
+                FullOptimStateDictConfig(rank0_only=True),          # newly added
             ):
                 generator_state_dict  = self.model.generator.state_dict()
-                generator_opim_state_dict = None
-                if save_optimizer_state:
-                    generator_opim_state_dict = FSDP.optim_state_dict(
-                        self.model.generator, self.generator_optimizer
-                    )
+                generator_opim_state_dict = FSDP.optim_state_dict(self.model.generator,
+                                                self.generator_optimizer)
 
             with FSDP.state_dict_type(
                 self.model.fake_score,
                 StateDictType.FULL_STATE_DICT,
                 FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
-                FullOptimStateDictConfig(rank0_only=True),
+                FullOptimStateDictConfig(rank0_only=True),          # newly added
             ):
                 critic_state_dict  = self.model.fake_score.state_dict()
-                critic_opim_state_dict = None
-                if save_optimizer_state:
-                    critic_opim_state_dict = FSDP.optim_state_dict(
-                        self.model.fake_score, self.critic_optimizer
-                    )
+                critic_opim_state_dict = FSDP.optim_state_dict(self.model.fake_score,
+                                                self.critic_optimizer)
 
             if self.config.ema_start_step < self.step and self.generator_ema is not None:
                 state_dict = {
@@ -814,11 +811,10 @@ class Trainer:
                 state_dict = {
                     "generator": generator_state_dict,
                     "critic": critic_state_dict,
+                    "generator_optimizer": generator_opim_state_dict,
+                    "critic_optimizer": critic_opim_state_dict,
                     "step": self.step,
                 }
-                if save_optimizer_state:
-                    state_dict["generator_optimizer"] = generator_opim_state_dict
-                    state_dict["critic_optimizer"] = critic_opim_state_dict
 
         if self.is_main_process:
             checkpoint_dir = os.path.join(self.output_path, f"checkpoint_model_{self.step:06d}")
@@ -1101,13 +1097,6 @@ class Trainer:
             self.streaming_active = False
             self.start_new_sequence()
         
-        self.kv_cache_before_generator_rollout = None
-        self.kv_cache_after_generator_rollout = None
-        self.kv_cache_after_generator_backward = None
-        self.kv_cache_before_critic_rollout = None
-        self.kv_cache_after_critic_rollout = None
-        self.kv_cache_after_critic_backward = None
-        
         if train_generator:
             if DEBUG and (not dist.is_initialized() or dist.get_rank() == 0):
                 print(f"[SeqTrain-Trainer] Training generator: generating next chunk")
@@ -1346,8 +1335,18 @@ class Trainer:
 
                 # Logging
                 if self.is_main_process:
+                    def _as_scalar(x):
+                        if isinstance(x, torch.Tensor):
+                            if x.numel() == 0:
+                                return None
+                            return x.detach().float().mean().item()
+                        if isinstance(x, (int, float)):
+                            return float(x)
+                        return None
+
                     wandb_loss_dict = {}
                     if TRAIN_GENERATOR and generator_log_dict:
+                        # Always keep these headline metrics.
                         wandb_loss_dict.update(
                             {
                                 "generator_loss": generator_log_dict["generator_loss"].mean().item(),
@@ -1355,6 +1354,14 @@ class Trainer:
                                 "dmdtrain_gradient_norm": generator_log_dict["dmdtrain_gradient_norm"].mean().item()
                             }
                         )
+                        # Also expose all scalar-like generator sub-terms (e.g. dmd_original_loss,
+                        # dmd_motion_loss, flow_reg_loss, reg_loss, lambda_*).
+                        for k, v in generator_log_dict.items():
+                            if k in wandb_loss_dict:
+                                continue
+                            scalar_v = _as_scalar(v)
+                            if scalar_v is not None:
+                                wandb_loss_dict[k] = scalar_v
 
 
                     wandb_loss_dict.update(
@@ -1363,6 +1370,13 @@ class Trainer:
                             "critic_grad_norm": critic_log_dict["critic_grad_norm"].mean().item()
                         }
                     )
+                    # Expose additional critic scalar terms if present.
+                    for k, v in critic_log_dict.items():
+                        if k in wandb_loss_dict:
+                            continue
+                        scalar_v = _as_scalar(v)
+                        if scalar_v is not None:
+                            wandb_loss_dict[k] = scalar_v
                     if not self.disable_wandb:
                         wandb.log(wandb_loss_dict, step=self.step)
                     if self.tb_writer is not None:
@@ -1418,6 +1432,8 @@ class Trainer:
                 traceback.print_exc()
         finally:
             # Clean up resources
+            if getattr(self, "tb_writer", None) is not None:
+                self.tb_writer.close()
             if self.one_logger is not None:
                 try:
                     self.one_logger.on_train_end()
@@ -1425,13 +1441,6 @@ class Trainer:
                 except Exception as cleanup_e:
                     if self.is_main_process:
                         print(f"[WARNING] Failed to clean up one_logger: {cleanup_e}")
-            if self.tb_writer is not None:
-                try:
-                    self.tb_writer.flush()
-                    self.tb_writer.close()
-                except Exception as tb_cleanup_e:
-                    if self.is_main_process:
-                        print(f"[WARNING] Failed to clean up TensorBoard writer: {tb_cleanup_e}")
 
 
     def _configure_lora_for_model(self, transformer, model_name):

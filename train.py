@@ -2,10 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 import argparse
 import os
+import shlex
+import sys
 from omegaconf import OmegaConf
 import wandb
 
 from trainer import ScoreDistillationTrainer
+
+
+def _load_shared_schedule(config):
+    schedule_path = config.get("schedule_config_path", "")
+    if not schedule_path:
+        return config
+    shared_schedule = OmegaConf.load(schedule_path)
+    # Schedule is the single source of truth for train/infer denoising settings.
+    return OmegaConf.merge(config, shared_schedule)
 
 
 def main():
@@ -24,6 +35,7 @@ def main():
     config = OmegaConf.load(args.config_path)
     default_config = OmegaConf.load("configs/default_config.yaml")
     config = OmegaConf.merge(default_config, config)
+    config = _load_shared_schedule(config)
     config.no_save = args.no_save
     config.no_visualize = args.no_visualize
 
@@ -36,6 +48,12 @@ def main():
     config.disable_wandb = args.disable_wandb
     config.auto_resume = not args.no_auto_resume  # Default to True unless --no-auto-resume is specified
     config.use_one_logger = not args.no_one_logger
+    config.config_path = os.path.abspath(args.config_path)
+    config.launch_command = " ".join(shlex.quote(arg) for arg in sys.argv)
+    if config.logdir:
+        os.makedirs(config.logdir, exist_ok=True)
+        resolved_path = os.path.join(config.logdir, "training_config_resolved.yaml")
+        OmegaConf.save(config=config, f=resolved_path, resolve=True)
 
     if config.trainer == "score_distillation":
         trainer = ScoreDistillationTrainer(config)

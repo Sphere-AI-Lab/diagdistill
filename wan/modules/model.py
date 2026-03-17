@@ -621,6 +621,10 @@ class WanModel(ModelMixin, ConfigMixin):
         self.gradient_checkpointing = False
 
     def _set_gradient_checkpointing(self, module=None, value=False, enable=None, gradient_checkpointing_func=None):
+        """
+        Adapter for diffusers' gradient checkpointing API.
+        We accept both the legacy (module, value) and new (enable=..., gradient_checkpointing_func=...) signatures.
+        """
         if enable is not None:
             value = enable
         self.gradient_checkpointing = value

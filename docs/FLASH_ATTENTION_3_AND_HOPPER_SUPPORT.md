@@ -1,10 +1,10 @@
 # Flash Attention 3 and Hopper GPU Support
 
-This document describes the Flash Attention 3 (FA3) integration and extended Hopper GPU support in diadistill.
+This document describes the Flash Attention 3 (FA3) integration and extended Hopper GPU support in LongLive.
 
 ## Overview
 
-diadistill supports both Flash Attention 2 (FA2) and Flash Attention 3 (FA3) for efficient attention computation. FA3 is automatically enabled on Hopper architecture GPUs (Compute Capability 9.0+), providing improved performance.
+LongLive supports both Flash Attention 2 (FA2) and Flash Attention 3 (FA3) for efficient attention computation. FA3 is automatically enabled on Hopper architecture GPUs (Compute Capability 9.0+), providing improved performance.
 
 ## Supported Hardware
 
@@ -71,7 +71,7 @@ A warning is issued when FA3 is explicitly requested but unavailable.
 
 ### Automatic Selection (Recommended)
 
-By default, diadistill automatically selects the optimal attention implementation:
+By default, LongLive automatically selects the optimal attention implementation:
 
 ```python
 from wan.modules.attention import attention

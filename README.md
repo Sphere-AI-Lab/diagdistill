@@ -83,6 +83,20 @@ huggingface-cli download Wan-AI/Wan2.1-T2V-1.3B --local-dir-use-symlinks False -
 huggingface-cli download Efficient-Large-Model/LongLive-1.3B --local-dir ./longlive_models
 ```
 
+For Stage-1 initialization (`init_ckpt` / `generator_ckpt`), you can use either:
+
+```
+# Option A: Self-Forcing ODE init
+huggingface-cli download gdhe17/Self-Forcing checkpoints/ode_init.pt --local-dir .
+
+# Option B: Causal-Forcing init ckpt
+huggingface-cli download zhuhz22/Causal-Forcing chunkwise/causal_forcing.pt --local-dir checkpoints
+```
+
+Then set `configs/exp_stage1_all4_odeinit.yaml` `generator_ckpt` to one of:
+* `checkpoints/ode_init.pt`
+* `checkpoints/chunkwise/causal_forcing.pt`
+
 Note:
 * **Our model works better with long, detailed prompts** since it's trained with such prompts. We will integrate prompt extension into the codebase (similar to [Wan2.1](https://github.com/Wan-Video/Wan2.1/tree/main?tab=readme-ov-file#2-using-prompt-extention)) in the future. For now, it is recommended to use third-party LLMs (such as GPT-4o) to extend your prompt before providing to the model.
 * You may want to adjust FPS so it plays smoothly on your device.
@@ -98,8 +112,13 @@ bash inference.sh
 
 ### Diagonal Distillation Training 
 ```
-bash train_init.sh
+bash train_two_stage_ode_then_diag.sh
 ```
+Current codebase training is a two-stage pipeline:
+
+* **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from `checkpoints/ode_init.pt` and run base distillation training to obtain a stable stage-1 checkpoint.
+* **Stage 2 (`exp_stage2_diag_from_stage1`)**: Resume from the stage-1 checkpoint and continue training with diagonal-denoising settings for better later-chunk temporal quality.
+
 Our training run uses 600 iterations and completes in under 2 hours using 64 H100 GPUs. By implementing gradient accumulation, it should be possible to reproduce the results in less than 16 hours using 8 H100 GPUs.
 
 ## Acknowledgements

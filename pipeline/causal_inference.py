@@ -10,6 +10,7 @@ from utils.wan_wrapper import WanDiffusionWrapper, WanTextEncoder, WanVAEWrapper
 from utils.memory import gpu, get_cuda_free_memory_gb, DynamicSwapInstaller, move_model_to_device_with_memory_preservation, log_gpu_memory
 from utils.debug_option import DEBUG
 import torch.distributed as dist
+from utils.denoising_schedule import build_block_denoising_steps
 
 class CausalInferencePipeline(torch.nn.Module):
     def __init__(
@@ -46,7 +47,14 @@ class CausalInferencePipeline(torch.nn.Module):
         self.num_frame_per_block = getattr(args, "num_frame_per_block", 1)
         self.local_attn_size = args.model_kwargs.local_attn_size
         self.use_diagonal_denoising = bool(getattr(args, "use_diagonal_denoising", False))
-        legacy_not_use_clean_context = bool(getattr(args, "not_use_clean_context_kv_update", False))
+        warmup_mid_steps_raw = getattr(args, "warmup_mid_steps_raw", None)
+        self.warmup_mid_steps = None
+        if warmup_mid_steps_raw is not None:
+            warmup_mid_steps = torch.tensor(list(warmup_mid_steps_raw), dtype=torch.long)
+            if args.warp_denoising_step:
+                timesteps = torch.cat((self.scheduler.timesteps.cpu(), torch.tensor([0], dtype=torch.float32)))
+                warmup_mid_steps = timesteps[1000 - warmup_mid_steps]
+            self.warmup_mid_steps = warmup_mid_steps.to(dtype=self.denoising_step_list.dtype)
 
         # Normalize to list if sequence-like (e.g., OmegaConf ListConfig)
 
@@ -97,7 +105,6 @@ class CausalInferencePipeline(torch.nn.Module):
         )
 
         # Set up profiling if requested
-        block_timing_records = []
         if profile:
             init_start = torch.cuda.Event(enable_timing=True)
             init_end = torch.cuda.Event(enable_timing=True)
@@ -147,29 +154,25 @@ class CausalInferencePipeline(torch.nn.Module):
 
         # Step 2: Temporal denoising loop
         all_num_frames = [self.num_frame_per_block] * num_blocks
+        block_timing_records = []
         for block_index, current_num_frames in enumerate(all_num_frames):
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            block_wall_start = time.perf_counter()
+            block_t0 = time.perf_counter()
             if profile:
                 block_start.record()
 
             noisy_input = noise[
                 :, current_start_frame:current_start_frame + current_num_frames]
-
-            if self.use_diagonal_denoising:
-                if block_index == 0:
-                    denoising_step_list = [int(self.denoising_step_list[0]), 933, 733, int(self.denoising_step_list[-1])]
-                elif block_index == 1:
-                    denoising_step_list = [int(self.denoising_step_list[0]), 933, int(self.denoising_step_list[-1])]
-                else:
-                    denoising_step_list = self.denoising_step_list
-            else:
-                denoising_step_list = self.denoising_step_list
-            current_step_count = len(denoising_step_list)
+            block_step_list = build_block_denoising_steps(
+                self.denoising_step_list,
+                block_index=block_index,
+                use_diagonal_denoising=self.use_diagonal_denoising,
+                warmup_mid_steps=self.warmup_mid_steps,
+            )
+            if (not dist.is_initialized() or dist.get_rank() == 0) and self.use_diagonal_denoising and block_index < 3:
+                print(f"[DiagonalDenoising] block={block_index}, steps={block_step_list.tolist()}")
 
             # Step 2.1: Spatial denoising loop
-            for index, current_timestep in enumerate(denoising_step_list):
+            for index, current_timestep in enumerate(block_step_list):
                 # print(f"current_timestep: {current_timestep}")
 
                 # set current timestep
@@ -178,7 +181,7 @@ class CausalInferencePipeline(torch.nn.Module):
                     device=noise.device,
                     dtype=torch.int64) * current_timestep
 
-                if index < len(denoising_step_list) - 1:
+                if index < len(block_step_list) - 1:
                     _, denoised_pred = self.generator(
                         noisy_image_or_video=noisy_input,
                         conditional_dict=conditional_dict,
@@ -187,7 +190,7 @@ class CausalInferencePipeline(torch.nn.Module):
                         crossattn_cache=self.crossattn_cache,
                         current_start=current_start_frame * self.frame_seq_length
                     )
-                    next_timestep = denoising_step_list[index + 1]
+                    next_timestep = block_step_list[index + 1]
                     noisy_input = self.scheduler.add_noise(
                         denoised_pred.flatten(0, 1),
                         torch.randn_like(denoised_pred.flatten(0, 1)),
@@ -206,27 +209,22 @@ class CausalInferencePipeline(torch.nn.Module):
                     )
             # Step 2.2: record the model's output
             output[:, current_start_frame:current_start_frame + current_num_frames] = denoised_pred.to(output.device)
-        
+
             if profile:
                 block_end.record()
                 torch.cuda.synchronize()
                 block_time = block_start.elapsed_time(block_end)
                 block_times.append(block_time)
-                block_time_ms = float(block_time)
-            else:
-                if torch.cuda.is_available():
-                    torch.cuda.synchronize()
-                block_time_ms = (time.perf_counter() - block_wall_start) * 1000.0
-
-            block_timing_records.append(
-                {
-                    "block_index": block_index,
-                    "step_count": current_step_count,
-                    "time_ms": block_time_ms,
-                }
-            )
 
             # Step 3.4: update the start and end frame indices
+            block_t1 = time.perf_counter()
+            block_timing_records.append(
+                {
+                    "block_index": int(block_index),
+                    "time_ms": float((block_t1 - block_t0) * 1000.0),
+                    "step_count": int(len(block_step_list)),
+                }
+            )
             current_start_frame += current_num_frames
 
         if profile:
@@ -258,12 +256,11 @@ class CausalInferencePipeline(torch.nn.Module):
             print(f"  - VAE decoding time: {vae_time:.2f} ms ({100 * vae_time / total_time:.2f}%)")
             print(f"  - Total time: {total_time:.2f} ms")
 
-        # Expose per-block timing info for outer scripts to report.
-        self.last_block_timing = block_timing_records
-
         if return_latents:
+            self.last_block_timing = block_timing_records
             return video, output.to(noise.device)
         else:
+            self.last_block_timing = block_timing_records
             return video
 
     def _initialize_kv_cache(self, batch_size, dtype, device, kv_cache_size_override: int | None = None):

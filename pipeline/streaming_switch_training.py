@@ -30,7 +30,6 @@ class StreamingSwitchTrainingPipeline(StreamingTrainingPipeline):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.global_sink = getattr(args, "global_sink", False)
 
     def generate_chunk_with_cache(
         self,
@@ -200,37 +199,22 @@ class StreamingSwitchTrainingPipeline(StreamingTrainingPipeline):
             # Record output
             output[:, local_start_frame:local_start_frame + current_num_frames] = denoised_pred
             
-            # Update cache according to training dia-forcing toggle.
-            if self.use_dia_forcing:
-                # Match inference-style cache refresh: direct denoised prediction, skip last block.
-                if block_index != len(all_num_frames) - 1:
-                    context_timestep = torch.ones_like(timestep) * self.context_noise
-                    with torch.no_grad():
-                        self.generator(
-                            noisy_image_or_video=denoised_pred,
-                            conditional_dict=cond_in_use,
-                            timestep=context_timestep,
-                            kv_cache=self.kv_cache1,
-                            crossattn_cache=self.crossattn_cache,
-                            current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                        )
-            else:
-                # Legacy behavior: explicitly add context noise before cache refresh.
-                context_timestep = torch.ones_like(timestep) * self.context_noise
-                context_noisy = self.scheduler.add_noise(
-                    denoised_pred.flatten(0, 1),
-                    torch.randn_like(denoised_pred.flatten(0, 1)),
-                    context_timestep.flatten(0, 1),
-                ).unflatten(0, denoised_pred.shape[:2])
-                with torch.no_grad():
-                    self.generator(
-                        noisy_image_or_video=context_noisy,
-                        conditional_dict=cond_in_use,
-                        timestep=context_timestep,
-                        kv_cache=self.kv_cache1,
-                        crossattn_cache=self.crossattn_cache,
-                        current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
-                    )
+            # Legacy behavior: explicitly add context noise before cache refresh.
+            context_timestep = torch.ones_like(timestep) * self.context_noise
+            context_noisy = self.scheduler.add_noise(
+                denoised_pred.flatten(0, 1),
+                torch.randn_like(denoised_pred.flatten(0, 1)),
+                context_timestep.flatten(0, 1),
+            ).unflatten(0, denoised_pred.shape[:2])
+            with torch.no_grad():
+                self.generator(
+                    noisy_image_or_video=context_noisy,
+                    conditional_dict=cond_in_use,
+                    timestep=context_timestep,
+                    kv_cache=self.kv_cache1,
+                    crossattn_cache=self.crossattn_cache,
+                    current_start=(current_start_frame + local_start_frame) * self.frame_seq_length,
+                )
             
             local_start_frame += current_num_frames
         
@@ -256,14 +240,13 @@ class StreamingSwitchTrainingPipeline(StreamingTrainingPipeline):
         return output, denoised_timestep_from, denoised_timestep_to
 
     def _recache_after_switch(self, output, current_start_frame, new_conditional_dict, local_start_frame=None, switch_recache_frames=None):
-        if not self.global_sink:
-            # reset kv cache
-            for block_idx in range(self.num_transformer_blocks):
-                cache = self.kv_cache1[block_idx]
-                cache["k"].zero_()
-                cache["v"].zero_()
-                # cache["global_end_index"].zero_()
-                # cache["local_end_index"].zero_()
+        # reset kv cache
+        for block_idx in range(self.num_transformer_blocks):
+            cache = self.kv_cache1[block_idx]
+            cache["k"].zero_()
+            cache["v"].zero_()
+            # cache["global_end_index"].zero_()
+            # cache["local_end_index"].zero_()
             
         # reset cross-attention cache
         for blk in self.crossattn_cache:
