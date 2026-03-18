@@ -82,12 +82,12 @@ For Stage-1 initialization (`init_ckpt` / `generator_ckpt`), you can use either:
 huggingface-cli download gdhe17/Self-Forcing checkpoints/ode_init.pt --local-dir .
 
 # Option B: Causal-Forcing init ckpt
-huggingface-cli download zhuhz22/Causal-Forcing chunkwise/causal_forcing.pt --local-dir checkpoints
+huggingface-cli download zhuhz22/Causal-Forcing chunkwise/causal_ode.pt --local-dir checkpoints
 ```
 
 Then set `configs/exp_stage1_all4_odeinit.yaml` `generator_ckpt` to one of:
 * `checkpoints/ode_init.pt`
-* `checkpoints/chunkwise/causal_forcing.pt`
+* `checkpoints/chunkwise/causal_ode.pt`
 
 <!--
 Note:
@@ -104,7 +104,7 @@ bash train_two_stage_ode_then_diag.sh
 ```
 Current codebase training is a two-stage pipeline:
 
-* **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from either `checkpoints/ode_init.pt` (Self-Forcing ODE init) or `checkpoints/chunkwise/causal_forcing.pt` (Causal-Forcing init), then run base distillation training to obtain a stable stage-1 checkpoint.
+* **Stage 1 (`exp_stage1_all4_odeinit`)**: Initialize from either `checkpoints/ode_init.pt` (Self-Forcing ODE init) or `checkpoints/chunkwise/causal_ode.pt` (Causal-Forcing init), then run base distillation training to obtain a stable stage-1 checkpoint.
 * **Stage 2 (`exp_stage2_diag_from_stage1`)**: Resume from the Stage-1 checkpoint (default: `checkpoint_model_001000/model.pt`, i.e., Stage-1 1000-step checkpoint) and continue training with diagonal-denoising settings for better later-chunk temporal quality.
 
 `Stage 1` is optional. `Stage 2` can directly load `longlive_models/LongLive-1.3B/models/longlive_base.pt` as the initialization checkpoint.
