@@ -121,13 +121,10 @@ This codebase is built on top of the open-source implementation of [LongLive](ht
 ## Citation
 If you find this codebase useful for your research, please kindly cite our paper:
 ```
-@misc{liu2026streamingautoregressivevideogeneration,
+  @InProceedings{liu2026diagdistill,
       title={Streaming Autoregressive Video Generation via Diagonal Distillation},
-      author={Jinxiu Liu and Xuanming Liu and Kangfu Mei and Yandong Wen and Ming-HsuanYang and Weiyang Liu},
-      year={2026},
-      eprint={2603.09488},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2603.09488},
-}
+      author={Liu, Jinxiu and Liu, Xuanming and Mei, Kangfu and Wen, Yandong and Yang, Ming-Hsuan and Liu, Weiyang},
+      booktitle={ICLR},
+      year={2026}
+  }
 ```
