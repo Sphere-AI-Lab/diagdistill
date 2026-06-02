@@ -9,6 +9,7 @@ imageio
 easydict
 ftfy
 dashscope
+openai
 imageio-ffmpeg
 # numpy==1.24.4
 wandb

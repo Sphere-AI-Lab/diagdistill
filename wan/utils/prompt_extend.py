@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+import re
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -297,6 +298,117 @@ class DashScopePromptExpander(PromptExpander):
                 response, ensure_ascii=False))
 
 
+class OpenAICompatiblePromptExpander(PromptExpander):
+    """Prompt expander using any OpenAI-compatible API (e.g., MiniMax, OpenAI, DeepSeek).
+
+    This expander supports any LLM provider that implements the OpenAI chat
+    completions API.  It is particularly useful for providers like **MiniMax**
+    that offer high-quality, cost-effective models with large context windows.
+
+    Supported environment variables (checked in order):
+        - ``OPENAI_API_KEY`` / ``OPENAI_BASE_URL`` – generic OpenAI-compatible
+          provider.
+        - ``MINIMAX_API_KEY`` – when set, the default ``base_url`` automatically
+          points to the MiniMax API and the default model is set to
+          ``MiniMax-M3``.
+    """
+
+    def __init__(
+        self,
+        api_key=None,
+        base_url=None,
+        model_name=None,
+        retry_times=4,
+        is_vl=False,
+        **kwargs,
+    ):
+        '''
+        Args:
+            api_key: API key for authentication.  Falls back to MINIMAX_API_KEY
+                or OPENAI_API_KEY environment variables.
+            base_url: Base URL of the OpenAI-compatible endpoint.  Falls back to
+                OPENAI_BASE_URL or, when using a MiniMax key, defaults to
+                ``https://api.minimax.io/v1``.
+            model_name: Model identifier (e.g. ``MiniMax-M3``, ``gpt-4o``).
+                Defaults to ``MiniMax-M3`` when ``MINIMAX_API_KEY`` is set.
+            retry_times: Number of retry attempts on failure.
+            is_vl: Not supported – raises an error if True.
+            **kwargs: Extra keyword arguments forwarded to the base class.
+        '''
+        if is_vl:
+            raise NotImplementedError(
+                "OpenAICompatiblePromptExpander does not support visual-language mode. "
+                "Use DashScopePromptExpander or QwenPromptExpander for VL tasks."
+            )
+
+        # Resolve API key
+        if api_key is None:
+            api_key = os.environ.get('MINIMAX_API_KEY') or os.environ.get('OPENAI_API_KEY')
+        if api_key is None:
+            raise ValueError(
+                "API key is required. Set MINIMAX_API_KEY or OPENAI_API_KEY, "
+                "or pass api_key directly."
+            )
+
+        # Resolve base URL – default to MiniMax when MINIMAX_API_KEY is used
+        if base_url is None:
+            base_url = os.environ.get('OPENAI_BASE_URL')
+        if base_url is None and os.environ.get('MINIMAX_API_KEY'):
+            base_url = 'https://api.minimax.io/v1'
+
+        # Resolve model name
+        if model_name is None:
+            if os.environ.get('MINIMAX_API_KEY'):
+                model_name = 'MiniMax-M3'
+            else:
+                model_name = 'gpt-4o'
+
+        super().__init__(model_name, is_vl, **kwargs)
+
+        from openai import OpenAI
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.model = model_name
+        self.retry_times = retry_times
+
+    def extend(self, prompt, system_prompt, seed=-1, *args, **kwargs):
+        messages = [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': prompt},
+        ]
+
+        exception = None
+        for _ in range(self.retry_times):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=512,
+                    seed=seed if seed >= 0 else None,
+                )
+                expanded_prompt = response.choices[0].message.content
+                # Strip <think>...</think> blocks from reasoning models
+                expanded_prompt = re.sub(
+                    r'<think>.*?</think>\s*', '', expanded_prompt, flags=re.DOTALL
+                ).strip()
+                return PromptOutput(
+                    status=True,
+                    prompt=expanded_prompt,
+                    seed=seed,
+                    system_prompt=system_prompt,
+                    message=response.model_dump_json(),
+                )
+            except Exception as e:
+                exception = e
+        return PromptOutput(
+            status=False,
+            prompt=prompt,
+            seed=seed,
+            system_prompt=system_prompt,
+            message=str(exception),
+        )
+
+
 class QwenPromptExpander(PromptExpander):
     model_dict = {
         "QwenVL2.5_3B": "Qwen/Qwen2.5-VL-3B-Instruct",
@@ -502,6 +614,19 @@ if __name__ == "__main__":
     # qwen_model_name = "./models/Qwen2.5-VL-3B-Instruct/" #VRAM: 9686MiB
     qwen_model_name = "./models/Qwen2.5-VL-7B-Instruct-AWQ/"  # VRAM: 8492
     image = "./examples/i2v_input.JPG"
+
+    # test openai-compatible api (MiniMax)
+    # Requires: export MINIMAX_API_KEY=<your-api-key>
+    if os.environ.get('MINIMAX_API_KEY'):
+        minimax_expander = OpenAICompatiblePromptExpander()
+        minimax_result = minimax_expander(prompt, tar_lang="ch")
+        print("LM minimax result -> ch", minimax_result.prompt)
+        minimax_result = minimax_expander(prompt, tar_lang="en")
+        print("LM minimax result -> en", minimax_result.prompt)
+        minimax_result = minimax_expander(en_prompt, tar_lang="ch")
+        print("LM minimax en result -> ch", minimax_result.prompt)
+        minimax_result = minimax_expander(en_prompt, tar_lang="en")
+        print("LM minimax en result -> en", minimax_result.prompt)
 
     # test dashscope api why image_path is local directory; skip
     dashscope_prompt_expander = DashScopePromptExpander(
