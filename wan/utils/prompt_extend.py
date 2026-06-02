@@ -310,7 +310,7 @@ class OpenAICompatiblePromptExpander(PromptExpander):
           provider.
         - ``MINIMAX_API_KEY`` – when set, the default ``base_url`` automatically
           points to the MiniMax API and the default model is set to
-          ``MiniMax-M2.7``.
+          ``MiniMax-M3``.
     """
 
     def __init__(
@@ -329,7 +329,8 @@ class OpenAICompatiblePromptExpander(PromptExpander):
             base_url: Base URL of the OpenAI-compatible endpoint.  Falls back to
                 OPENAI_BASE_URL or, when using a MiniMax key, defaults to
                 ``https://api.minimax.io/v1``.
-            model_name: Model identifier (e.g. ``MiniMax-M2.7``, ``gpt-4o``).
+            model_name: Model identifier (e.g. ``MiniMax-M3``, ``gpt-4o``).
+                Defaults to ``MiniMax-M3`` when ``MINIMAX_API_KEY`` is set.
             retry_times: Number of retry attempts on failure.
             is_vl: Not supported – raises an error if True.
             **kwargs: Extra keyword arguments forwarded to the base class.
@@ -358,7 +359,7 @@ class OpenAICompatiblePromptExpander(PromptExpander):
         # Resolve model name
         if model_name is None:
             if os.environ.get('MINIMAX_API_KEY'):
-                model_name = 'MiniMax-M2.7'
+                model_name = 'MiniMax-M3'
             else:
                 model_name = 'gpt-4o'
 
